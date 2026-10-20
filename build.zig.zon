@@ -1,0 +1,15 @@
+.{
+    .name = .termy,
+    .version = "0.0.1",
+    .fingerprint = 0x6877d66fcb711dfb,
+    .minimum_zig_version = "0.17.0",
+    .dependencies = .{
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "LICENSE",
+        "README.md",
+    },
+}
