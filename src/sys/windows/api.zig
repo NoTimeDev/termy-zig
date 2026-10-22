@@ -1,4 +1,4 @@
-pub const windows = @import("std").os.windows;
+const windows = @import("std").os.windows;
 pub extern "kernel32" fn CreateFileW(
     lpFileName: windows.LPCWSTR,
     dwDesiredAccess: windows.DWORD,
@@ -37,3 +37,4 @@ pub const FILE_SHARE_READ: windows.DWORD           = 0x00000001;
 pub const OPEN_EXISTING: windows.DWORD             = 3;
 pub const WAIT_FAILED: windows.DWORD               = 0xFFFFFFFF;
 pub const WAIT_OBJECT_0: windows.DWORD             = 0;
+

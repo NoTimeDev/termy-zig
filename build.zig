@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) void {
 
     const run_step = b.step("test", "Build and run all test programs");
     for([_][]const u8{
-        "tests/tests.zig"
+        "tests/test.zig"
     }) |path|{
         const exe = b.addExecutable(.{
             .name = std.fs.path.stem(path),
@@ -33,6 +33,7 @@ pub fn build(b: *std.Build) void {
             })
         });
         const run = b.addRunArtifact(exe);
+        b.installArtifact(exe);
         run_step.dependOn(&run.step);
     }
 }
