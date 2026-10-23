@@ -1,4 +1,10 @@
 const windows = @import("std").os.windows;
+
+pub const CONSOLE_CURSOR_INFO = extern struct{
+    dwSize: windows.DWORD,
+    bVisible: windows.BOOL
+};
+
 pub extern "kernel32" fn CreateFileW(
     lpFileName: windows.LPCWSTR,
     dwDesiredAccess: windows.DWORD,
@@ -10,19 +16,35 @@ pub extern "kernel32" fn CreateFileW(
 ) callconv(.winapi) windows.HANDLE;
 
 pub extern "kernel32" fn WaitForSingleObject(
-  hHandle: windows.HANDLE,
-  dwMilliseconds: windows.DWORD, 
+    hHandle: windows.HANDLE,
+    dwMilliseconds: windows.DWORD, 
 ) callconv(.winapi) windows.DWORD;
 
 pub extern "kernel32" fn GetConsoleMode(
-  hConsoleHandle: windows.HANDLE,
-  lpMode: *windows.DWORD
+    hConsoleHandle: windows.HANDLE,
+    lpMode: *windows.DWORD
 ) callconv(.winapi) windows.BOOL;
 
 pub extern "kernel32" fn SetConsoleMode(
-  hConsoleHandle: windows.HANDLE,
-  dwMode: windows.DWORD
+    hConsoleHandle: windows.HANDLE,
+    dwMode: windows.DWORD
 ) callconv(.winapi) windows.BOOL;
+ 
+pub extern "kernel32" fn SetConsoleCursorPosition(
+    hConsoleOutput: windows.HANDLE,
+    dwCursorPosition: windows.COORD  
+) callconv(.winapi) windows.BOOL;
+
+
+pub extern "kernel32" fn SetConsoleCursorInfo(
+    hConsoleOutput: windows.HANDLE,
+    lpConsoleCursorInfo: *CONSOLE_CURSOR_INFO
+) callconv(.winapi) windows.BOOL;
+
+pub extern "kernel32" fn GetConsoleCursorInfo(
+    hConsoleOutput: windows.HANDLE,
+    lpConsoleCursorInfo: *CONSOLE_CURSOR_INFO,
+) callconv(.winapi) windows.BOOL; 
 
 pub const ENABLE_PROCESSED_INPUT: u32              = 0x0001;
 pub const ENABLE_LINE_INPUT: u32                   = 0x0002;

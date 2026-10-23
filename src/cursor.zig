@@ -1,21 +1,54 @@
+//! This file provides functions to manipulate the cursor 
+
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub const Move = struct {
-    x: u16,
-    y: u16,
-
-    pub fn write_ansi(self: *const @This(), writer: *std.Io.File.Writer) !void{
-        try writer.interface.print("\x1b[{};{}H", .{self.x, self.y});
+/// Moves the cursor to the postions specified
+pub fn moveTo(writer: *std.Io.File.Writer, x: u16, y: u16) !void{
+    if(builtin.os.tag == .windows){
+        const sys = @import("sys/windows/root.zig");
+        sys.check_handle(writer.file.handle);
+        if(!sys.supported_features.VtOut){
+            if(sys.winapi.SetConsoleCursorPosition(writer.file.handle, .{
+                .X = @intCast(x),
+                .Y = @intCast(y) 
+            }) == sys.windows.BOOL.FALSE)
+                return error.FailedToMoveCursor;
+        }
     }
+    writer.interface.print("\x1b[{};{}H", .{x, y}) catch return error.FailedToMoveCursor;
+}
 
-    pub const write_winapi = if(builtin.os.tag == .windows)
-        struct {
-            fn write_winapi(self: *const Move, writer: *std.Io.File.Writer) !void{
-                _ = self; _ = writer;
-                @compileError("Move not supported for windows");
-            }
-        }.write_winapi
-    else 
-        {};
-};
+/// Hides the cursor 
+pub fn hide(writer: *std.Io.File.Writer) !void{
+    if(builtin.os.tag == .windows){
+        const sys = @import("sys/windows/root.zig");
+        sys.check_handle(writer.file.handle);
+        if(!sys.supported_features.VtOut){
+            var cinfo: sys.winapi.CONSOLE_CURSOR_INFO = undefined;
+            if(sys.winapi.GetConsoleCursorInfo(writer.file.handle, &cinfo) == sys.windows.BOOL.FALSE)
+                return error.FailedToHideCursor;
+            cinfo.bVisible = sys.windows.BOOL.FALSE;
+            if(sys.winapi.SetConsoleCursorInfo(writer.file.handle, &cinfo) == sys.windows.BOOL.FALSE)
+                return error.FailedToHideCursor;
+        }
+    }
+    writer.interface.writeAll("\x1b[?25l") catch return error.FailedToHideCursor;
+}
+
+/// Shows the cursor 
+pub fn show(writer: *std.Io.File.Writer) !void{
+    if(builtin.os.tag == .windows){
+        const sys = @import("sys/windows/root.zig");
+        sys.check_handle(writer.file.handle);
+        if(!sys.supported_features.VtOut){
+            var cinfo: sys.winapi.CONSOLE_CURSOR_INFO = undefined;
+            if(sys.winapi.GetConsoleCursorInfo(writer.file.handle, &cinfo) == sys.windows.BOOL.FALSE)
+                return error.FailedToHideCursor;
+            cinfo.bVisible = sys.windows.BOOL.TRUE;
+            if(sys.winapi.SetConsoleCursorInfo(writer.file.handle, &cinfo) == sys.windows.BOOL.FALSE)
+                return error.FailedToHideCursor;
+        }
+    }
+    writer.interface.writeAll("\x1b[?25h") catch return error.FailedToHideCursor;
+}

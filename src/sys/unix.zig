@@ -5,3 +5,5 @@ pub fn sysout(io: std.Io) !std.Io.File{
         .mode = .read_write,
     }) catch return error.FailedToOpenTty;
 }
+
+pub inline fn enableOutVT(_: std.Io.File) void{}

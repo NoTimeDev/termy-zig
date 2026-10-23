@@ -3,13 +3,19 @@ const termy = @import("termy");
 
 pub fn main(init: std.process.Init) !void{
     var buffer: [1024]u8 = undefined;
-    // Create a buffered writer 
-    var writer: std.Io.File.Writer = .init(std.Io.File.stdout(), init.io, &buffer);
+    // Create a buffered writer
+    const stdout = std.Io.File.stdout();
+    var writer: std.Io.File.Writer = .init(stdout, init.io, &buffer);
+    termy.enableOutVT(stdout);
 
-    // execute automatically flushes 
-    try termy.execute(&writer, .{
-        termy.style.Color{.Red = {}},
-        termy.style.Print{.msg = "Some Error!\n"},
-        termy.style.Color{.Reset = {}},
-    });
+    try termy.cursor.moveTo(&writer, 20, 20);
+    try writer.flush();
+
+    try termy.cursor.hide(&writer);
+    try writer.flush();
+    
+
+    try termy.cursor.show(&writer);
+     // flush output
+    try writer.flush();
 }
