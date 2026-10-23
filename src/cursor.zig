@@ -14,6 +14,7 @@ pub fn moveTo(writer: *std.Io.File.Writer, x: u16, y: u16) !void{
                 .Y = @intCast(y) 
             }) == sys.windows.BOOL.FALSE)
                 return error.FailedToMoveCursor;
+            return;
         }
     }
     writer.interface.print("\x1b[{};{}H", .{x, y}) catch return error.FailedToMoveCursor;
@@ -31,6 +32,7 @@ pub fn hide(writer: *std.Io.File.Writer) !void{
             cinfo.bVisible = sys.windows.BOOL.FALSE;
             if(sys.winapi.SetConsoleCursorInfo(writer.file.handle, &cinfo) == sys.windows.BOOL.FALSE)
                 return error.FailedToHideCursor;
+            return;
         }
     }
     writer.interface.writeAll("\x1b[?25l") catch return error.FailedToHideCursor;
@@ -48,6 +50,7 @@ pub fn show(writer: *std.Io.File.Writer) !void{
             cinfo.bVisible = sys.windows.BOOL.TRUE;
             if(sys.winapi.SetConsoleCursorInfo(writer.file.handle, &cinfo) == sys.windows.BOOL.FALSE)
                 return error.FailedToHideCursor;
+            return;
         }
     }
     writer.interface.writeAll("\x1b[?25h") catch return error.FailedToHideCursor;
