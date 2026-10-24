@@ -4,6 +4,10 @@ pub const windows = std.os.windows;
 
 pub var current_handle: windows.HANDLE = 0;
 pub var supported_features: WinSupportedFeatures = .{}; 
+pub var saved_cursor_position: windows.COORD = .{
+    .X = 0,
+    .Y = 0
+};
 
 pub const WinSupportedFeatures = packed struct(u8){
     VtOut: bool = false,

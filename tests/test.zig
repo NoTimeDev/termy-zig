@@ -9,11 +9,31 @@ pub fn main(init: std.process.Init) !void{
     var writer: std.Io.File.Writer = .init(stdout, init.io, &buffer);
     termy.enableOutVT(stdout);
 
-    
-    try termy.cursor.moveRight(&writer, 20);
+    try termy.cursor.setCursorStyle(&writer, .SteadyBar);
     try writer.flush();
     try std.Io.sleep(init.io, .fromSeconds(1), .awake);
-    try termy.cursor.moveLeft(&writer, 90);
+
+    try termy.cursor.setCursorStyle(&writer, .BlinkingBar);
+    try writer.flush();
+    try std.Io.sleep(init.io, .fromSeconds(1), .awake);
+
+    try termy.cursor.setCursorStyle(&writer, .SteadyBlock);
+    try writer.flush();
+    try std.Io.sleep(init.io, .fromSeconds(1), .awake);
+
+    try termy.cursor.setCursorStyle(&writer, .BlinkingBlock);
+    try writer.flush();
+    try std.Io.sleep(init.io, .fromSeconds(1), .awake);
+
+    try termy.cursor.setCursorStyle(&writer, .SteadyUnderScore);
+    try writer.flush();
+    try std.Io.sleep(init.io, .fromSeconds(1), .awake);
+    
+    try termy.cursor.setCursorStyle(&writer, .BlinkingUnderScore);
+    try writer.flush();
+    try std.Io.sleep(init.io, .fromSeconds(1), .awake);
+
+    try termy.cursor.setCursorStyle(&writer, .DefaultUserShape);
     try writer.flush();
     try std.Io.sleep(init.io, .fromSeconds(1), .awake);
 }
