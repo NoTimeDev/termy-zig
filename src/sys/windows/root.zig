@@ -17,6 +17,7 @@ pub inline fn check_handle(handle: windows.HANDLE) void{
     }
 }
 
+
 const testing_windows_api: bool = false;
 
 /// This function is used to get supported features of a terminal to decide whether to use VT or ConsoleApi

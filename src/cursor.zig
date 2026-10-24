@@ -20,6 +20,90 @@ pub fn moveTo(writer: *std.Io.File.Writer, x: u16, y: u16) !void{
     writer.interface.print("\x1b[{};{}H", .{x, y}) catch return error.FailedToMoveCursor;
 }
 
+/// Moves cursor n cells down 
+pub fn moveDown(writer: *std.Io.File.Writer, n: u16) !void{
+    if(builtin.os.tag == .windows){
+        const sys = @import("sys/windows/root.zig");
+        sys.check_handle(writer.file.handle);
+        if(!sys.supported_features.VtOut){
+            var info: sys.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
+            if(sys.winapi.GetConsoleScreenBufferInfo(writer.file.handle, &info) == sys.windows.BOOL.FALSE)
+                return error.FailedToMoveCursor;
+            
+            if(sys.winapi.SetConsoleCursorPosition(writer.file.handle, .{
+                .X = @intCast(info.dwCursorPosition.X),
+                .Y = @intCast(info.dwCursorPosition.Y+@as(i16, @intCast(n))) 
+            }) == sys.windows.BOOL.FALSE)
+                return error.FailedToMoveCursor;
+            return;
+        }
+    }
+    writer.interface.print("\x1b[{}B", .{n}) catch return error.FailedToMoveCursor;
+}
+
+/// Moves cursor n cells up 
+pub fn moveUp(writer: *std.Io.File.Writer, n: u16) !void{
+    if(builtin.os.tag == .windows){
+        const sys = @import("sys/windows/root.zig");
+        sys.check_handle(writer.file.handle);
+        if(!sys.supported_features.VtOut){
+            var info: sys.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
+            if(sys.winapi.GetConsoleScreenBufferInfo(writer.file.handle, &info) == sys.windows.BOOL.FALSE)
+                return error.FailedToMoveCursor;
+            
+            if(sys.winapi.SetConsoleCursorPosition(writer.file.handle, .{
+                .X = @intCast(info.dwCursorPosition.X),
+                .Y = @intCast(@as(i16, @intCast(@as(u16, @intCast(info.dwCursorPosition.Y))-|n)))
+            }) == sys.windows.BOOL.FALSE)
+                return error.FailedToMoveCursor;
+            return;
+        }
+    }
+    writer.interface.print("\x1b[{}A", .{n}) catch return error.FailedToMoveCursor;
+}
+
+/// Moves cursor n cells to the left 
+pub fn moveLeft(writer: *std.Io.File.Writer, n: u16) !void{
+    if(builtin.os.tag == .windows){
+        const sys = @import("sys/windows/root.zig");
+        sys.check_handle(writer.file.handle);
+        if(!sys.supported_features.VtOut){
+            var info: sys.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
+            if(sys.winapi.GetConsoleScreenBufferInfo(writer.file.handle, &info) == sys.windows.BOOL.FALSE)
+                return error.FailedToMoveCursor;
+            
+            if(sys.winapi.SetConsoleCursorPosition(writer.file.handle, .{
+                .X = @intCast(@as(i16, @intCast(@as(u16, @intCast(info.dwCursorPosition.X))-|n))),
+                .Y = @intCast(info.dwCursorPosition.Y) 
+            }) == sys.windows.BOOL.FALSE)
+                return error.FailedToMoveCursor;
+            return;
+        }
+    }
+    writer.interface.print("\x1b[{}D", .{n}) catch return error.FailedToMoveCursor;
+}
+
+/// Moves cursor n cells to the right 
+pub fn moveRight(writer: *std.Io.File.Writer, n: u16) !void{
+    if(builtin.os.tag == .windows){
+        const sys = @import("sys/windows/root.zig");
+        sys.check_handle(writer.file.handle);
+        if(!sys.supported_features.VtOut){
+            var info: sys.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
+            if(sys.winapi.GetConsoleScreenBufferInfo(writer.file.handle, &info) == sys.windows.BOOL.FALSE)
+                return error.FailedToMoveCursor;
+            
+            if(sys.winapi.SetConsoleCursorPosition(writer.file.handle, .{
+                .X = @intCast(info.dwCursorPosition.X+@as(i16, @intCast(n))),
+                .Y = @intCast(info.dwCursorPosition.Y) 
+            }) == sys.windows.BOOL.FALSE)
+                return error.FailedToMoveCursor;
+            return;
+        }
+    }
+    writer.interface.print("\x1b[{}C", .{n}) catch return error.FailedToMoveCursor;
+}
+
 /// Hides the cursor 
 pub fn hide(writer: *std.Io.File.Writer) !void{
     if(builtin.os.tag == .windows){
@@ -55,3 +139,4 @@ pub fn show(writer: *std.Io.File.Writer) !void{
     }
     writer.interface.writeAll("\x1b[?25h") catch return error.FailedToHideCursor;
 }
+
