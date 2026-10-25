@@ -39,7 +39,7 @@ pub fn enableOutVT(handle: windows.HANDLE) void{
     }
 }
 
-pub fn sysout(io: std.Io) !std.Io.File{
+pub inline fn sysout(io: std.Io) !std.Io.File{
     _ = io;
     const handle = winapi.CreateFileW(
         std.unicode.utf8ToUtf16LeStringLiteral("CONOUT$"), 

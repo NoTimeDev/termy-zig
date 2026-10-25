@@ -7,7 +7,9 @@ pub fn main(init: std.process.Init) !void{
 
     var out: termy.OutputTty = .init(init.io, stdout, &buffer);
    
-    try out.moveRight(4);
-    try out.writer().writeAll("Hello!\n");
+    try out.setCursorStyle(.SteadyBlock);
+    try out.writer().flush();
+    try std.Io.sleep(init.io, .fromSeconds(2), .awake);
+    try out.setCursorStyle(.DefaultUserShape);
     try out.writer().flush();
 }
