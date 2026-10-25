@@ -99,6 +99,7 @@ pub const WAIT_FAILED: windows.DWORD                   = 0xFFFFFFFF;
 pub const WAIT_OBJECT_0: windows.DWORD                 = 0;
 pub const CONSOLE_TEXTMODE_BUFFER: windows.DWORD       = 1;
 
+pub const COMMON_LVB_UNDERSCORE: u16 = 0x8000;
 pub const FOREGROUND_BLUE: u16                         = 0x0001;
 pub const FOREGROUND_GREEN: u16                        = 0x0002;
 pub const FOREGROUND_RED: u16                          = 0x0004;
