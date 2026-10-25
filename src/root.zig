@@ -1,25 +1,50 @@
 //! Root module for termy! 
-//! Note: On windows if a handle does not support virtual terminal processing(VT) then windows ConsoleApi calls are made
-//! this means no bytes will be writen to the writer
 
-const builtin = @import("builtin");
 const std = @import("std");
-const sys = switch (builtin.os.tag) {
-    .windows => @import("sys/windows/root.zig"),
-    else => @import("sys/unix.zig")
+const builtin = @import("builtin");
+const cursor = @import("cursor.zig");
+const Platform = @import("platform.zig").Platform;
+
+/// Terminal output file, On windows this is "CONOUT$" on unix systems this is "/dev/tty"
+pub const sysout = if(builtin.os.tag == .windows)
+    @import("sys/windows/root.zig").sysout
+else 
+    @import("sys/unix.zig").sysout;
+
+pub const OutputTty = struct{
+    outwriter: std.Io.File.Writer,
+    platform: Platform,
+    
+    pub fn init(io: std.Io, file: std.Io.File, buffer: []u8) @This(){
+        return .{
+            .platform = .init(&file),
+            .outwriter = .init(file, io, buffer)
+        };
+    }    
+    
+    pub fn writer(self: *@This()) *std.Io.Writer{
+        return &self.outwriter.interface;
+    }
+    
+    // -- Cursor -- 
+
+    /// Moves the cursor n cells down 
+    pub fn moveDown(self: *@This(), n: u16) !void{
+        return cursor.moveDown(&self.platform, &self.outwriter, n);        
+    }
+
+    /// Moves the cursor n cells up 
+    pub fn moveUp(self: *@This(), n: u16) !void{
+        return cursor.moveUp(&self.platform, &self.outwriter, n);        
+    }
+    
+    /// Moves the cursor n cells to the left
+    pub fn moveLeft(self: *@This(), n: u16) !void{
+        return cursor.moveLeft(&self.platform, &self.outwriter, n);        
+    }
+
+    /// Moves the cursor n cells to the right 
+    pub fn moveRight(self: *@This(), n: u16) !void{
+        return cursor.moveRight(&self.platform, &self.outwriter, n);        
+    }
 };
-
-// Note to self, make readme sound less ai-y
-
-/// This returns the system's output file, this is different from stdout 
-/// On windows this is "CONOUT$" on linux this is "/dev/tty"
-pub const sysout = sys.sysout;
-
-pub const cursor = @import("cursor.zig");
-pub const style = @import("style.zig");
-
-/// This function trys to enable VT output
-/// On Unix systems, this function does nothing 
-/// On Windows if this function cannot enable VT output
-/// operations on this file will use ConsoleApi
-pub const enableOutVT = sys.enableOutVT;
