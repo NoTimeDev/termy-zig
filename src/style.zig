@@ -228,8 +228,8 @@ pub const Style = struct{
         }
         switch(color){
             .Reset => self.writer.interface.writeAll("\x1b[59m") catch return error.FailedToSetUnderlineColor,
-            .Rgb => |rgb| self.writer.interface.print("\x1b[58;2;{};{};{}m", .{rgb.r, rgb.g, rgb.b}) catch return error.FailedToSetUnderlineColor,
-            .AnsiValue => |ansi| self.writer.interface.print("\x1b[58;5;{}m", .{ansi}) catch return error.FailedToSetUnderlineColor,
+            .Rgb => |rgb| self.writer.interface.print("\x1b[58:2::{}:{}:{}m", .{rgb.r, rgb.g, rgb.b}) catch return error.FailedToSetUnderlineColor,
+            .AnsiValue => |ansi| self.writer.interface.print("\x1b[58:5:{}m", .{ansi}) catch return error.FailedToSetUnderlineColor,
             else => {
                 const v: u8 = switch (color) {   
                     .Black => 0,

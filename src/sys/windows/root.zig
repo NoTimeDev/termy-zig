@@ -7,7 +7,7 @@ pub const WinSupportedFeatures = packed struct(u8){
     _: u7 = 0
 };
 
-
+pub const FORCE_CONSOLE_API: bool = false;
 pub inline fn getSupported(handle: windows.HANDLE) WinSupportedFeatures{
     var features: windows.DWORD = 0;
     if(winapi.GetConsoleMode(handle, &features) == windows.BOOL.FALSE)
@@ -21,6 +21,8 @@ pub inline fn getSupported(handle: windows.HANDLE) WinSupportedFeatures{
         vt = true;
     }
 
+    if(FORCE_CONSOLE_API)
+        return .{};
     return .{
         .VtOut = vt
     };

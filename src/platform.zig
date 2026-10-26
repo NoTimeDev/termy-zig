@@ -1,7 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const TRY_FOR_VT_CONSOLE_API: bool = true;
 pub const WindowsPlatform = struct {
     const win = @import("sys/windows/root.zig");
     const windows = std.os.windows;
@@ -16,9 +15,7 @@ pub const WindowsPlatform = struct {
     original_handle: windows.HANDLE = windows.INVALID_HANDLE_VALUE,
     supported: win.WinSupportedFeatures,
     pub fn init(file: *const std.Io.File) WindowsPlatform{
-        if(TRY_FOR_VT_CONSOLE_API){
-            win.enableOutVT(file.handle);
-        }
+        win.enableOutVT(file.handle);
         return .{
             .supported = win.getSupported(file.handle)
         };
