@@ -10,7 +10,7 @@ pub const Style = struct{
 
     /// Represents a color
     ///
-    /// Note: On windows, if it falls back to the ConsoleApi,
+    /// Note: On windows, if it falls back to the WinAPI,
     /// only the 3/4 bit colors are supported.
     /// AnsiValue and Rgb will do nothing 
     pub const Color = union(enum){
@@ -218,7 +218,7 @@ pub const Style = struct{
 
     /// Sets the terminal underline color
     /// 
-    /// Note: There is no windows ConsoleApi fallback for this,
+    /// Note: There is no windows WinAPI fallback for this,
     /// Non-VT terminals will do nothing
     pub fn setUnderlineColor(self: *Style, color: Color) !void{
         if(builtin.os.tag == .windows){
@@ -284,7 +284,7 @@ pub const Style = struct{
                 var attr: u16 = info.wAttributes;
                 switch (attribute) {
                     .Bold => attr|=win.winapi.FOREGROUND_INTENSITY,
-                    .NormalIntensity, .Dim => attr&=~win.winapi.FOREGROUND_INTENSITY,
+                    .Dim => attr&=~win.winapi.FOREGROUND_INTENSITY,
                     .Underlined => attr|=win.winapi.COMMON_LVB_UNDERSCORE,
                     .NoUnderline => attr&=~win.winapi.COMMON_LVB_UNDERSCORE,
                     // There are flags for reverse, BUTTTT similar to underscore its unreliable sooo emulate!
@@ -307,6 +307,10 @@ pub const Style = struct{
                             (attr & ~(win.winapi.FG_MASK | win.winapi.BG_MASK)) |
                             (fg << 4) |
                             (bg >> 4);
+                    },
+                    .NormalIntensity => {
+                        attr = (attr & ~win.winapi.FOREGROUND_INTENSITY) |
+                            (self.platform.original_console_state.?.wAttributes & win.winapi.FOREGROUND_INTENSITY);
                     },
                     else => {}
                 }

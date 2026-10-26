@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const TRY_FOR_VT_CONSOLE_API: bool = false;
+const TRY_FOR_VT_CONSOLE_API: bool = true;
 pub const WindowsPlatform = struct {
     const win = @import("sys/windows/root.zig");
     const windows = std.os.windows;
@@ -12,8 +12,9 @@ pub const WindowsPlatform = struct {
         .Y = 0,
     },
     original_console_state: ?win.winapi.CONSOLE_SCREEN_BUFFER_INFO = null,
-    reversed: bool = false, 
-    supported: win.WinSupportedFeatures, 
+    reversed: bool = false,
+    original_handle: windows.HANDLE = windows.INVALID_HANDLE_VALUE,
+    supported: win.WinSupportedFeatures,
     pub fn init(file: *const std.Io.File) WindowsPlatform{
         if(TRY_FOR_VT_CONSOLE_API){
             win.enableOutVT(file.handle);
@@ -31,6 +32,7 @@ pub const UnixPlatform = struct {
     }
 };
 
+/// This structure contains os specfic information about the terminal
 pub const Platform = if(builtin.os.tag == .windows)
     WindowsPlatform 
 else 

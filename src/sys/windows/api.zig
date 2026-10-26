@@ -83,6 +83,10 @@ pub extern "kernel32" fn SetConsoleActiveScreenBuffer(
     SetConsoleActiveScreenBuffer: windows.HANDLE
 ) callconv(.winapi) windows.BOOL;
 
+pub extern "kernel32" fn SetConsoleTitleW(
+    lpConsoleTitle: windows.LPCWSTR
+) callconv(.winapi) windows.BOOL;
+
 pub const ENABLE_PROCESSED_INPUT: u32                  = 0x0001;
 pub const ENABLE_LINE_INPUT: u32                       = 0x0002;
 pub const ENABLE_ECHO_INPUT: u32                       = 0x0004;

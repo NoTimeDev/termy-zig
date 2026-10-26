@@ -6,7 +6,12 @@ pub const Style = @import("style.zig").Style;
 pub const Platform = @import("platform.zig").Platform;
 pub const Terminal = @import("terminal.zig").Terminal;
 
-/// Terminal output file, On windows this is "CONOUT$", on unix systems this is "/dev/tty"
+/// Returns the terminal output file, On windows this is "CONOUT$", on unix systems this is "/dev/tty"
+///
+/// For TUI applications, prefer this function over standard output.
+/// This is especially important on older Windows consoles or when using
+/// the WinAPI fallback, where using standard output for alternatescreen
+/// operations may cause the original screen contents to be lost.
 pub inline fn sysout(io: std.Io) !std.Io.File{
     return if(builtin.os.tag == .windows)
         @import("sys/windows/root.zig").sysout(io)
