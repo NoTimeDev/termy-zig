@@ -1,11 +1,11 @@
-const Platform = @import("platform.zig").Platform;
+const OutputState = @import("platform.zig").OutputState;
 const std = @import("std");
 const builtin = @import("builtin");
 const options = @import("options");
 
 /// Provides functions to change how the terminal behaves
 pub const Terminal = struct {
-    platform: *Platform,
+    outputstate: *OutputState,
     writer: *std.Io.File.Writer,
 
     /// A enum containing the types of clearing operations
@@ -27,10 +27,10 @@ pub const Terminal = struct {
     /// Enter an alternate screen
     pub fn enterAlternateScreen(self: *Terminal) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 const win = @import("sys/windows/root.zig");
                 self.writer.flush() catch return error.FailedToEnterAlternateScreen;
-                if(self.platform.original_handle != win.windows.INVALID_HANDLE_VALUE) return;
+                if(self.outputstate.original_handle != win.windows.INVALID_HANDLE_VALUE) return;
                 const handle: win.windows.HANDLE = win.winapi.CreateConsoleScreenBuffer(
                     win.winapi.GENERIC_READ | win.winapi.GENERIC_WRITE,
                     win.winapi.FILE_SHARE_READ | win.winapi.FILE_SHARE_WRITE,
@@ -45,8 +45,8 @@ pub const Terminal = struct {
                     .handle = handle,
                     .flags = .{ .nonblocking = false }
                 };
-                self.platform.* = .init(&file);
-                self.platform.original_handle = self.writer.file.handle;
+                self.outputstate.* = .init(&file);
+                self.outputstate.original_handle = self.writer.file.handle;
                 self.writer.* = .init(file, self.writer.io, self.writer.interface.buffer);
                 return;
             }
@@ -57,21 +57,21 @@ pub const Terminal = struct {
     /// Leave an alternate screen
     pub fn leaveAlternateScreen(self: *Terminal) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 const win = @import("sys/windows/root.zig");
                 self.writer.flush() catch return error.FailedToEnterAlternateScreen;
-                if(self.platform.original_handle == win.windows.INVALID_HANDLE_VALUE) return;
+                if(self.outputstate.original_handle == win.windows.INVALID_HANDLE_VALUE) return;
                 
-                if(win.winapi.SetConsoleActiveScreenBuffer(self.platform.original_handle) == .FALSE) return error.FailedToLeaveAlternateScreen;
+                if(win.winapi.SetConsoleActiveScreenBuffer(self.outputstate.original_handle) == .FALSE) return error.FailedToLeaveAlternateScreen;
 
                 win.windows.CloseHandle(self.writer.file.handle);
                 const file: std.Io.File = .{
-                    .handle = self.platform.original_handle,
+                    .handle = self.outputstate.original_handle,
                     .flags = .{ .nonblocking = false }
                 };
-                self.platform.* = .init(&file);
+                self.outputstate.* = .init(&file);
                 self.writer.* = .init(file, self.writer.io, self.writer.interface.buffer);
-                self.platform.original_handle = win.windows.INVALID_HANDLE_VALUE;
+                self.outputstate.original_handle = win.windows.INVALID_HANDLE_VALUE;
                 return;
             }
         }
@@ -83,7 +83,7 @@ pub const Terminal = struct {
     /// Note: There is no WinApi fallback for this function
     pub fn beginSynchronizedUpdate(self: *Terminal) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 return;
             }
         }
@@ -95,7 +95,7 @@ pub const Terminal = struct {
     /// Note: There is no WinApi fallback for this function
     pub fn endSynchronizedUpdate(self: *Terminal) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 return;
             }
         }
@@ -105,7 +105,7 @@ pub const Terminal = struct {
     /// Enables line wrap 
     pub fn enableLineWrap(self: *Terminal) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToEnterAlternateScreen;
                 const win = @import("sys/windows/root.zig");
                 var mode: u32 = 0;
@@ -122,7 +122,7 @@ pub const Terminal = struct {
     /// Disables line wrap
     pub fn disableLineWrap(self: *Terminal) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToEnterAlternateScreen;
                 const win = @import("sys/windows/root.zig");
                 var mode: u32 = 0;
@@ -139,13 +139,13 @@ pub const Terminal = struct {
     /// scroll up n times 
     pub fn scrollUp(self: *Terminal, n: u16) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToScrollUp;
                 const win = @import("sys/windows/root.zig");
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
                 if(win.winapi.GetConsoleScreenBufferInfo(self.writer.file.handle, &info) == .FALSE) return error.FailedToScrollUp;
-                if(self.platform.original_console_state == null)
-                    self.platform.original_console_state = info;
+                if(self.outputstate.original_console_state == null)
+                    self.outputstate.original_console_state = info;
                 if(info.srWindow.Top >= n){
                     info.srWindow.Top-=n;
                     info.srWindow.Bottom-=n;
@@ -160,13 +160,13 @@ pub const Terminal = struct {
     /// scroll down n times 
     pub fn scrollDown(self: *Terminal, n: u16) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToScrollUp;
                 const win = @import("sys/windows/root.zig");
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
                 if(win.winapi.GetConsoleScreenBufferInfo(self.writer.file.handle, &info) == .FALSE) return error.FailedToScrollUp;
-                if(self.platform.original_console_state == null)
-                    self.platform.original_console_state = info;
+                if(self.outputstate.original_console_state == null)
+                    self.outputstate.original_console_state = info;
                 
                 if(info.srWindow.Bottom < info.dwSize.Y - @as(i16, @intCast(n))){
                     info.srWindow.Top+=n;
@@ -181,7 +181,7 @@ pub const Terminal = struct {
     /// Sets the terminal title, on WinAPI fallback the max string len is 512 bytes
     pub fn setTitle(self: *Terminal, title: []const u8) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 const win = @import("sys/windows/root.zig");
                 self.writer.flush() catch return error.FailedToSetTitle;
 
@@ -199,7 +199,7 @@ pub const Terminal = struct {
     /// Clears the terminal screen buffer
     pub fn clear(self: *Terminal, clear_type: ClearType) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 return;
             }
         }

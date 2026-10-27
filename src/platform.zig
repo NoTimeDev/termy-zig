@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub const WindowsPlatform = struct {
+pub const WindowsState = struct {
     const win = @import("sys/windows/root.zig");
     const windows = std.os.windows;
 
@@ -14,7 +14,7 @@ pub const WindowsPlatform = struct {
     reversed: bool = false,
     original_handle: windows.HANDLE = windows.INVALID_HANDLE_VALUE,
     supported: win.WinSupportedFeatures,
-    pub fn init(file: *const std.Io.File) WindowsPlatform{
+    pub fn init(file: *const std.Io.File) WindowsState{
         win.enableOutVT(file.handle);
         return .{
             .supported = win.getSupported(file.handle)
@@ -22,15 +22,16 @@ pub const WindowsPlatform = struct {
     }
 };
 
-pub const UnixPlatform = struct {
-    pub inline fn init(file: *const std.Io.File) UnixPlatform{
+pub const UnixState = struct {
+    pub inline fn init(file: *const std.Io.File) UnixState{
         _ = file;
         return .{};
     }
 };
 
-/// This structure contains os specfic information about the terminal
-pub const Platform = if(builtin.os.tag == .windows)
-    WindowsPlatform 
+/// This structure contains os specfic information about the output terminals state
+/// Each file should use its own OutputState instance, sharing a OutputState instance will cause UB 
+pub const OutputState = if(builtin.os.tag == .windows)
+    WindowsState 
 else 
-    UnixPlatform;
+    UnixState;

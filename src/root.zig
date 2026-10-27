@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 
 pub const Cursor = @import("cursor.zig").Cursor;
 pub const Style = @import("style.zig").Style;
-pub const Platform = @import("platform.zig").Platform;
+pub const OutputState = @import("platform.zig").OutputState;
 pub const Terminal = @import("terminal.zig").Terminal;
 
 /// Returns the terminal output file, On windows this is "CONOUT$", on unix systems this is "/dev/tty"
@@ -22,13 +22,13 @@ pub inline fn sysout(io: std.Io) !std.Io.File{
 /// Manages terminal inits all terminal utlity structs  
 pub const Tty = struct{
     outwriter: std.Io.File.Writer,
-    platform: Platform,
+    outputstate: OutputState,
     cursor: Cursor,
     style: Style,
     terminal: Terminal,
 
     pub fn init(self: *Tty, io: std.Io, file: std.Io.File, buffer: []u8) void{
-        self.platform = .init(&file);
+        self.outputstate = .init(&file);
         self.outwriter = .init(file, io, buffer);
         self.cursor = .{
             .platform = &self.platform,

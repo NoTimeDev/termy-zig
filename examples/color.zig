@@ -5,11 +5,11 @@ pub fn main(init: std.process.Init) !void {
     const stdout = try termy.sysout(init.io);
     var buffer: [1024]u8 = undefined;
 
-    var platform: termy.Platform = .init(&stdout);
+    var outputstate: termy.OutputState = .init(&stdout);
     var writer: std.Io.File.Writer = .init(stdout, init.io, &buffer);
 
     var style: termy.Style = .{
-        .platform = &platform,
+        .outputstate = &outputstate,
         .writer = &writer,
     };
 

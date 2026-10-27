@@ -1,11 +1,11 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const Platform = @import("platform.zig").Platform; 
+const OutputState = @import("platform.zig").OutputState; 
 const options = @import("options");
 
 /// This structure contains functions, which can be used to manipulate the cursor
 pub const Cursor = struct{
-    platform: *Platform,
+    outputstate: *OutputState,
     writer: *std.Io.File.Writer,
     
     /// This enum contains options to change the shape of the cursor, and the blinking of the cursor
@@ -33,7 +33,7 @@ pub const Cursor = struct{
     pub fn moveDown(self: *Cursor, n: u16) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -54,7 +54,7 @@ pub const Cursor = struct{
     pub fn moveUp(self: *Cursor, n: u16) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -75,7 +75,7 @@ pub const Cursor = struct{
     pub fn moveLeft(self: *Cursor, n: u16) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -97,7 +97,7 @@ pub const Cursor = struct{
     pub fn moveRight(self: *Cursor, n: u16) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -118,7 +118,7 @@ pub const Cursor = struct{
     pub fn moveToColumn(self: *Cursor, n: u16) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -138,7 +138,7 @@ pub const Cursor = struct{
     pub fn moveToRow(self: *Cursor, n: u16) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -158,7 +158,7 @@ pub const Cursor = struct{
     pub fn moveTo(self: *Cursor, x: u16, y: u16) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
                 if(win.winapi.SetConsoleCursorPosition(self.writer.file.handle, .{
                     .X = @intCast(x-|1),
@@ -174,7 +174,7 @@ pub const Cursor = struct{
     pub fn hide(self: *Cursor) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToHideCursor;
                 var cinfo: win.winapi.CONSOLE_CURSOR_INFO = undefined;
                 if(win.winapi.GetConsoleCursorInfo(self.writer.file.handle, &cinfo) == .FALSE) return error.FailedToHideCursor;
@@ -191,7 +191,7 @@ pub const Cursor = struct{
     pub fn show(self: *Cursor) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToShowCursor;
                 var cinfo: win.winapi.CONSOLE_CURSOR_INFO = undefined;
                 if(win.winapi.GetConsoleCursorInfo(self.writer.file.handle, &cinfo) == .FALSE) return error.FailedToShowCursor;
@@ -208,12 +208,12 @@ pub const Cursor = struct{
     pub fn savePosition(self: *Cursor) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const sys = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToSavePostion;
                 var info: sys.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
                 if(sys.winapi.GetConsoleScreenBufferInfo(self.writer.file.handle, &info) == sys.windows.BOOL.FALSE) return error.FailedToSavePostion;
                
-                self.platform.saved_cursor_postion = info.dwCursorPosition;
+                self.outputstate.saved_cursor_postion = info.dwCursorPosition;
                 return;
             }
         }
@@ -224,9 +224,9 @@ pub const Cursor = struct{
     pub fn restorePosition(self: *Cursor) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const sys = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToRestorePostion;
-                if(sys.winapi.SetConsoleCursorPosition(self.writer.file.handle, self.platform.saved_cursor_postion) == sys.windows.BOOL.FALSE) return error.FailedToRestorePostion;
+                if(sys.winapi.SetConsoleCursorPosition(self.writer.file.handle, self.outputstate.saved_cursor_postion) == sys.windows.BOOL.FALSE) return error.FailedToRestorePostion;
                 return;
             }
         }
@@ -245,22 +245,22 @@ pub const Cursor = struct{
     pub fn setCursorStyle(self: *Cursor, style: CursorStyle) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 switch (style) {
                     .DefaultUserShape => {
                         self.writer.flush() catch return error.FailedToSetCursorStyle;
                         var cinfo: win.winapi.CONSOLE_CURSOR_INFO = undefined;
                         if(win.winapi.GetConsoleCursorInfo(self.writer.file.handle, &cinfo) == .FALSE) return error.FailedToSetCursorStyle;
-                        if(self.platform.default_size != 0)
-                            cinfo.dwSize = self.platform.default_size;
+                        if(self.outputstate.default_size != 0)
+                            cinfo.dwSize = self.outputstate.default_size;
                         if(win.winapi.SetConsoleCursorInfo(self.writer.file.handle, &cinfo) == .FALSE) return error.FailedToSetCursorStyle;
                     },
                     .SteadyUnderScore, .BlinkingUnderScore => {
                         self.writer.flush() catch return error.FailedToSetCursorStyle;
                         var cinfo: win.winapi.CONSOLE_CURSOR_INFO = undefined;
                         if(win.winapi.GetConsoleCursorInfo(self.writer.file.handle, &cinfo) == .FALSE) return error.FailedToSetCursorStyle;
-                        if(self.platform.default_size == 0)
-                            self.platform.default_size = cinfo.dwSize;
+                        if(self.outputstate.default_size == 0)
+                            self.outputstate.default_size = cinfo.dwSize;
                         
                         cinfo.dwSize = 20;
                         if(win.winapi.SetConsoleCursorInfo(self.writer.file.handle, &cinfo) == .FALSE) return error.FailedToSetCursorStyle;
@@ -269,8 +269,8 @@ pub const Cursor = struct{
                         self.writer.flush() catch return error.FailedToSetCursorStyle;
                         var cinfo: win.winapi.CONSOLE_CURSOR_INFO = undefined;
                         if(win.winapi.GetConsoleCursorInfo(self.writer.file.handle, &cinfo) == .FALSE) return error.FailedToSetCursorStyle;
-                        if(self.platform.default_size == 0)
-                            self.platform.default_size = cinfo.dwSize;
+                        if(self.outputstate.default_size == 0)
+                            self.outputstate.default_size = cinfo.dwSize;
                         
                         cinfo.dwSize = 100;
                         if(win.winapi.SetConsoleCursorInfo(self.writer.file.handle, &cinfo) == .FALSE) return error.FailedToSetCursorStyle;

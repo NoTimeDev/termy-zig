@@ -1,11 +1,11 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const Platform = @import("platform.zig").Platform;
+const OutputState = @import("platform.zig").OutputState;
 const options = @import("options");
 
 /// This structure contains functions, which can be used to manipulate how the terminal looks 
 pub const Style = struct{
-    platform: *Platform,
+    outputstate: *OutputState,
     writer: *std.Io.File.Writer,
 
     /// Represents a color
@@ -140,21 +140,21 @@ pub const Style = struct{
     pub fn setForegroundColor(self: *Style, color: Color) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToSetForegroundColor;
                 if(color == .AnsiValue or color == .Rgb) return;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
                 if(win.winapi.GetConsoleScreenBufferInfo(self.writer.file.handle, &info) == .FALSE)
                     return error.FailedToSetForegroundColor;
-                if(self.platform.original_console_state == null){
-                    self.platform.original_console_state = info;
+                if(self.outputstate.original_console_state == null){
+                    self.outputstate.original_console_state = info;
                 }
                 
                 if(color == .Reset){
                     if(win.winapi.SetConsoleTextAttribute(self.writer.file.handle, 
                             (info.wAttributes & ~win.winapi.FG_MASK) | 
-                            (self.platform.original_console_state.?.wAttributes & win.winapi.FG_MASK)
+                            (self.outputstate.original_console_state.?.wAttributes & win.winapi.FG_MASK)
                     ) == .FALSE)
                         return error.FailedToSetForegroundColor;
                     return;
@@ -180,21 +180,21 @@ pub const Style = struct{
     pub fn setBackgroundColor(self: *Style, color: Color) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToSetBackgroundColor;
                 if(color == .AnsiValue or color == .Rgb) return;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
                 if(win.winapi.GetConsoleScreenBufferInfo(self.writer.file.handle, &info) == .FALSE)
                     return error.FailedToSetBackgroundColor;
-                if(self.platform.original_console_state == null){
-                    self.platform.original_console_state = info;
+                if(self.outputstate.original_console_state == null){
+                    self.outputstate.original_console_state = info;
                 }
                 
                 if(color == .Reset){
                     if(win.winapi.SetConsoleTextAttribute(self.writer.file.handle, 
                             (info.wAttributes & ~win.winapi.BG_MASK) | 
-                            (self.platform.original_console_state.?.wAttributes & win.winapi.BG_MASK)
+                            (self.outputstate.original_console_state.?.wAttributes & win.winapi.BG_MASK)
                     ) == .FALSE)
                         return error.FailedToSetBackgroundColor;
                     return;
@@ -222,7 +222,7 @@ pub const Style = struct{
     /// Non-VT terminals will do nothing
     pub fn setUnderlineColor(self: *Style, color: Color) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 return;
             }
         }
@@ -267,7 +267,7 @@ pub const Style = struct{
     pub fn setAttribute(self: *Style, attribute: Attribute) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.platform.supported.VtOut){
+            if(options.out == .native or !self.outputstate.supported.VtOut){
                 self.writer.flush() catch return error.FailedToSetAttribute;
                 switch (attribute) {
                     .Bold, .NormalIntensity, .Underlined, .NoUnderline, .Dim, .Reverse, .NoReverse => {},
@@ -277,8 +277,8 @@ pub const Style = struct{
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
                 if(win.winapi.GetConsoleScreenBufferInfo(self.writer.file.handle, &info) == .FALSE)
                     return error.FailedToSetBackgroundColor;
-                if(self.platform.original_console_state == null){
-                    self.platform.original_console_state = info;
+                if(self.outputstate.original_console_state == null){
+                    self.outputstate.original_console_state = info;
                 }
                
                 var attr: u16 = info.wAttributes;
@@ -289,8 +289,8 @@ pub const Style = struct{
                     .NoUnderline => attr&=~win.winapi.COMMON_LVB_UNDERSCORE,
                     // There are flags for reverse, BUTTTT similar to underscore its unreliable sooo emulate!
                     .Reverse => {
-                        if(self.platform.reversed) return;
-                        self.platform.reversed = true;
+                        if(self.outputstate.reversed) return;
+                        self.outputstate.reversed = true;
                         const fg = attr & win.winapi.FG_MASK;
                         const bg = attr & win.winapi.BG_MASK;
                         attr =
@@ -299,8 +299,8 @@ pub const Style = struct{
                             (bg >> 4);
                     },
                     .NoReverse => {
-                        if(!self.platform.reversed) return;
-                        self.platform.reversed = false;
+                        if(!self.outputstate.reversed) return;
+                        self.outputstate.reversed = false;
                         const fg = attr & win.winapi.FG_MASK;
                         const bg = attr & win.winapi.BG_MASK;
                         attr =
@@ -310,7 +310,7 @@ pub const Style = struct{
                     },
                     .NormalIntensity => {
                         attr = (attr & ~win.winapi.FOREGROUND_INTENSITY) |
-                            (self.platform.original_console_state.?.wAttributes & win.winapi.FOREGROUND_INTENSITY);
+                            (self.outputstate.original_console_state.?.wAttributes & win.winapi.FOREGROUND_INTENSITY);
                     },
                     else => {}
                 }
