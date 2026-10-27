@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const Platform = @import("platform.zig").Platform; 
+const options = @import("options");
 
 /// This structure contains functions, which can be used to manipulate the cursor
 pub const Cursor = struct{
@@ -30,9 +31,9 @@ pub const Cursor = struct{
 
     /// Moves the cursor n cells down 
     pub fn moveDown(self: *Cursor, n: u16) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -51,9 +52,9 @@ pub const Cursor = struct{
 
     /// Moves the cursor n cells up 
     pub fn moveUp(self: *Cursor, n: u16) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -72,9 +73,9 @@ pub const Cursor = struct{
 
     /// Moves the cursor n cells to the left
     pub fn moveLeft(self: *Cursor, n: u16) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -94,9 +95,9 @@ pub const Cursor = struct{
 
     /// Moves the cursor n cells to the right 
     pub fn moveRight(self: *Cursor, n: u16) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -115,9 +116,9 @@ pub const Cursor = struct{
 
     /// Moves the cursor to column n
     pub fn moveToColumn(self: *Cursor, n: u16) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -135,9 +136,9 @@ pub const Cursor = struct{
 
     /// Moves the cursor to row n
     pub fn moveToRow(self: *Cursor, n: u16) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -155,9 +156,9 @@ pub const Cursor = struct{
 
     /// Moves the cursor to the speficied positon(x, y)
     pub fn moveTo(self: *Cursor, x: u16, y: u16) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToMoveCursor;
                 if(win.winapi.SetConsoleCursorPosition(self.writer.file.handle, .{
                     .X = @intCast(x-|1),
@@ -171,9 +172,9 @@ pub const Cursor = struct{
 
     /// Hides the cursor 
     pub fn hide(self: *Cursor) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToHideCursor;
                 var cinfo: win.winapi.CONSOLE_CURSOR_INFO = undefined;
                 if(win.winapi.GetConsoleCursorInfo(self.writer.file.handle, &cinfo) == .FALSE) return error.FailedToHideCursor;
@@ -188,9 +189,9 @@ pub const Cursor = struct{
 
     /// Shows the cursor 
     pub fn show(self: *Cursor) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToShowCursor;
                 var cinfo: win.winapi.CONSOLE_CURSOR_INFO = undefined;
                 if(win.winapi.GetConsoleCursorInfo(self.writer.file.handle, &cinfo) == .FALSE) return error.FailedToShowCursor;
@@ -205,9 +206,9 @@ pub const Cursor = struct{
 
     /// Saves the cursor positon
     pub fn savePosition(self: *Cursor) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const sys = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToSavePostion;
                 var info: sys.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
                 if(sys.winapi.GetConsoleScreenBufferInfo(self.writer.file.handle, &info) == sys.windows.BOOL.FALSE) return error.FailedToSavePostion;
@@ -221,12 +222,11 @@ pub const Cursor = struct{
 
     /// Restores the cursor positon
     pub fn restorePosition(self: *Cursor) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const sys = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 self.writer.flush() catch return error.FailedToRestorePostion;
                 if(sys.winapi.SetConsoleCursorPosition(self.writer.file.handle, self.platform.saved_cursor_postion) == sys.windows.BOOL.FALSE) return error.FailedToRestorePostion;
-
                 return;
             }
         }
@@ -243,9 +243,9 @@ pub const Cursor = struct{
     ///
     /// Whether the cursor blinks is terminal dependent
     pub fn setCursorStyle(self: *Cursor, style: CursorStyle) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 switch (style) {
                     .DefaultUserShape => {
                         self.writer.flush() catch return error.FailedToSetCursorStyle;

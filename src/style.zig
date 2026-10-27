@@ -1,7 +1,7 @@
 const builtin = @import("builtin");
 const std = @import("std");
 const Platform = @import("platform.zig").Platform;
-
+const options = @import("options");
 
 /// This structure contains functions, which can be used to manipulate how the terminal looks 
 pub const Style = struct{
@@ -138,10 +138,10 @@ pub const Style = struct{
 
     /// Sets the terminal color 
     pub fn setForegroundColor(self: *Style, color: Color) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            self.writer.flush() catch return error.FailedToSetForegroundColor;
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
+                self.writer.flush() catch return error.FailedToSetForegroundColor;
                 if(color == .AnsiValue or color == .Rgb) return;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -178,10 +178,10 @@ pub const Style = struct{
 
     /// Sets the terminal color
     pub fn setBackgroundColor(self: *Style, color: Color) !void{
-        if(builtin.os.tag == .windows){
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            self.writer.flush() catch return error.FailedToSetBackgroundColor;
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
+                self.writer.flush() catch return error.FailedToSetBackgroundColor;
                 if(color == .AnsiValue or color == .Rgb) return;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
@@ -221,8 +221,8 @@ pub const Style = struct{
     /// Note: There is no windows WinAPI fallback for this,
     /// Non-VT terminals will do nothing
     pub fn setUnderlineColor(self: *Style, color: Color) !void{
-        if(builtin.os.tag == .windows){
-            if(!self.platform.supported.VtOut){
+        if(builtin.os.tag == .windows and options.out != .vt){
+            if(options.out == .native or !self.platform.supported.VtOut){
                 return;
             }
         }
@@ -265,10 +265,10 @@ pub const Style = struct{
     
     /// Sets a terminal attribute 
     pub fn setAttribute(self: *Style, attribute: Attribute) !void{
-        if(builtin.os.tag == .windows){
-            self.writer.flush() catch return error.FailedToSetAttribute;
+        if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(!self.platform.supported.VtOut){
+            if(options.out == .native or !self.platform.supported.VtOut){
+                self.writer.flush() catch return error.FailedToSetAttribute;
                 switch (attribute) {
                     .Bold, .NormalIntensity, .Underlined, .NoUnderline, .Dim, .Reverse, .NoReverse => {},
                     else => return

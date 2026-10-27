@@ -20,6 +20,15 @@ pub const CONSOLE_SCREEN_BUFFER_INFO  = extern struct{
   dwMaximumWindowSize: windows.COORD,
 };
 
+pub const CHAR_INFO = extern struct{
+  const CHAR = extern union {
+    UnicodeChar: windows.WCHAR,
+    AsciiChar: windows.CHAR
+  };
+  Char: CHAR,
+  Attributes: windows.WORD,
+};
+
 pub extern "kernel32" fn CreateFileW(
     lpFileName: windows.LPCWSTR,
     dwDesiredAccess: windows.DWORD,
@@ -87,10 +96,25 @@ pub extern "kernel32" fn SetConsoleTitleW(
     lpConsoleTitle: windows.LPCWSTR
 ) callconv(.winapi) windows.BOOL;
 
+pub extern "kernel32" fn ScrollConsoleScreenBufferW(
+    hConsoleOutput: windows.HANDLE,
+    lpScrollRectangle: *const SMALL_RECT,
+    lpClipRectangle: *const SMALL_RECT,
+    dwDestinationOrigin: windows.COORD,
+    lpFill: *const CHAR_INFO
+) callconv(.winapi) windows.BOOL;
+
+pub extern "kernel32" fn SetConsoleWindowInfo(
+    hConsoleOutput: windows.HANDLE,
+    bAbsolute: windows.BOOL,
+    lpConsoleWindow: *const SMALL_RECT
+) callconv(.winapi) windows.BOOL;
 pub const ENABLE_PROCESSED_INPUT: u32                  = 0x0001;
 pub const ENABLE_LINE_INPUT: u32                       = 0x0002;
 pub const ENABLE_ECHO_INPUT: u32                       = 0x0004;
 pub const ENABLE_VIRTUAL_TERMINAL_INPUT: u32           = 0x0200;
+
+pub const ENABLE_WRAP_AT_EOL_OUTPUT: u32 =0x0002;
 pub const ENABLE_PROCESSED_OUTPUT: u32                 = 0x0001;
 pub const ENABLE_VIRTUAL_TERMINAL_PROCESSING: u32      = 0x0004;
 

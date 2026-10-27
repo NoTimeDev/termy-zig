@@ -1,14 +1,16 @@
 const std = @import("std");
 pub const winapi = @import("api.zig");
 pub const windows = std.os.windows;
+pub const options = @import("options");
 
 pub const WinSupportedFeatures = packed struct(u8){
     VtOut: bool = false,
     _: u7 = 0
 };
-
-pub const FORCE_CONSOLE_API: bool = false;
 pub inline fn getSupported(handle: windows.HANDLE) WinSupportedFeatures{
+    if(options.out == .native or options.out == .vt)
+        return .{};
+
     var features: windows.DWORD = 0;
     if(winapi.GetConsoleMode(handle, &features) == windows.BOOL.FALSE)
         return .{};
@@ -21,8 +23,6 @@ pub inline fn getSupported(handle: windows.HANDLE) WinSupportedFeatures{
         vt = true;
     }
 
-    if(FORCE_CONSOLE_API)
-        return .{};
     return .{
         .VtOut = vt
     };
