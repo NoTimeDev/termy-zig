@@ -1,4 +1,4 @@
-const OutputState = @import("platform.zig").OutputState;
+const OutputState = @import("state.zig").OutputState;
 const std = @import("std");
 const builtin = @import("builtin");
 const options = @import("options");

@@ -1,6 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const OutputState = @import("platform.zig").OutputState;
+const OutputState = @import("state.zig").OutputState;
 const options = @import("options");
 
 /// This structure contains functions, which can be used to manipulate how the terminal looks 

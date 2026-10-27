@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 
 pub const Cursor = @import("cursor.zig").Cursor;
 pub const Style = @import("style.zig").Style;
-pub const OutputState = @import("platform.zig").OutputState;
+pub const OutputState = @import("state.zig").OutputState;
 pub const Terminal = @import("terminal.zig").Terminal;
 
 /// Returns the terminal output file, On windows this is "CONOUT$", on unix systems this is "/dev/tty"
@@ -31,17 +31,17 @@ pub const Tty = struct{
         self.outputstate = .init(&file);
         self.outwriter = .init(file, io, buffer);
         self.cursor = .{
-            .platform = &self.platform,
+            .outputstate = &self.outputstate,
             .writer = &self.outwriter
         };
 
         self.style = .{
-            .platform = &self.platform,
+            .outputstate = &self.outputstate,
             .writer = &self.outwriter
         };
     
         self.terminal = .{
-            .platform = &self.platform,
+            .outputstate = &self.outputstate,
             .writer = &self.outwriter,
         };
     }    
