@@ -61,7 +61,7 @@ pub const INPUT_RECORD = extern struct {
         MenuEvent: MENU_EVENT_RECORD,
         FocusEvent: FOCUS_EVENT_RECORD,
     };
-    EventType: windows.DWORD,
+    EventType: windows.WORD,
     Event: EVENT,
 };
   
@@ -190,6 +190,10 @@ pub extern "kernel32" fn GetStdHandle(
 pub extern "kernel32" fn SetStdHandle(
     nStdHandle: windows.DWORD,
     hHandle: windows.HANDLE
+) callconv(.winapi) windows.BOOL;
+
+pub extern "kernel32" fn FlushConsoleInputBuffer(
+    hConsoleInput: windows.HANDLE
 ) callconv(.winapi) windows.BOOL;
 
 pub extern "kernel32" fn GetConsoleCP() callconv(.winapi) windows.UINT;

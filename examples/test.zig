@@ -12,7 +12,6 @@ pub fn main(init: std.process.Init) !void{
     var writer: std.Io.File.Writer = .init(stdout, init.io, &buffer);
 
     var terminal: termy.Terminal = .init(&outstate, &instate, &writer, stdin.handle);
-    var input: termy.Input = .init(&instate, init.io, stdin);
     var x: std.ArrayList(termy.event.Event) = .empty;
     
     defer {
@@ -28,11 +27,11 @@ pub fn main(init: std.process.Init) !void{
     try terminal.enableRawMode();
     defer terminal.disableRawMode() catch {};
     try writer.flush();
+    var input: termy.Input = .init(&instate, init.io, stdin);
 
 
     while (true) {
         if(try input.poll(.fromMilliseconds(20))){
-            std.debug.print("Hi", .{});
             const event = try input.read();
             try x.append(std.heap.smp_allocator, event);
             switch (event) {

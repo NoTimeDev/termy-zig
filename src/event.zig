@@ -33,6 +33,7 @@ pub const KeyCode = union(enum){
     Pause,
     Menu,
     KeypadBegin,
+    KeyModifier: KeyModifiers,
 };
 
 pub const KeyModifiers = packed struct{

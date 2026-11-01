@@ -81,9 +81,7 @@ pub inline fn sysIn() !std.Io.File{
 
 const event = @import("../../event.zig");
 pub fn translateKey(record: winapi.KEY_EVENT_RECORD) event.KeyEvent{
-    const code: event.KeyCode = if(record.uChar.UnicodeChar != 0)
-        .{ .Char = @as(u21, @intCast(record.uChar.UnicodeChar)) }
-    else 
+    const code: event.KeyCode = 
         switch (record.wVirtualKeyCode) {
             winapi.VK_BACK => .Backspace,
             winapi.VK_TAB => .Tab,
@@ -103,10 +101,16 @@ pub fn translateKey(record: winapi.KEY_EVENT_RECORD) event.KeyEvent{
             winapi.VK_INSERT => .Insert,
             winapi.VK_DELETE => .Delete,
 
+            winapi.VK_SHIFT, winapi.VK_CAPITAL => event.KeyCode{ .KeyModifier = .{ .Shift = true } },
+            winapi.VK_CONTROL => event.KeyCode{ .KeyModifier = .{ .Control = true } },
+            winapi.VK_MENU => event.KeyCode{ .KeyModifier = .{ .Alt = true } },
             winapi.VK_F1...winapi.VK_F24 => |k|
                 .{ .F = @as(u8, @intCast(k - winapi.VK_F1 + 1)) },
 
-            else => .{.Char = @as(u21, @intCast(record.wVirtualKeyCode))},
+            else => if(record.uChar.UnicodeChar != 0)
+                    .{ .Char = @intCast(record.uChar.UnicodeChar) }
+                else 
+                    .{ .Char = @intCast(record.wVirtualKeyCode) },
         };
     return .{
         .code = code,

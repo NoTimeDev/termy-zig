@@ -13,6 +13,10 @@ pub const Input = struct {
     len: usize = 0,
 
     pub fn init(inputstate: *InputState, io: std.Io, file: std.Io.File) Input{
+        if(builtin.os.tag == .windows){
+            const win = @import("sys/windows/root.zig");
+            _ = win.winapi.FlushConsoleInputBuffer(file.handle);
+        }
         return .{
             .io = io,
             .inputstate = inputstate,
@@ -52,6 +56,7 @@ pub const Input = struct {
             var record: win.winapi.INPUT_RECORD = undefined;
             var n: win.windows.DWORD = 0;
             if(win.winapi.ReadConsoleInputW(self.file.handle, &record, 1, &n) == .FALSE) return error.FailedToReadEvent;
+
             switch (record.EventType) {
                 win.winapi.KEY_EVENT => {
                     if(record.Event.KeyEvent.bKeyDown != .FALSE){
