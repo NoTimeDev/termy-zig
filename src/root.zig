@@ -1,52 +1,63 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub const Cursor = @import("cursor.zig").Cursor;
-pub const Style = @import("style.zig").Style;
-pub const OutputState = @import("state.zig").OutputState;
-pub const Terminal = @import("terminal.zig").Terminal;
+pub const Cusor = @import("cursor.zig").Cursor; 
+pub const Style = @import("style.zig").Style; 
+pub const Terminal = @import("terminal.zig").Terminal; 
+pub const Input = @import("input.zig").Input;
+pub const event = @import("event.zig");
 
-/// Returns the terminal output file, On windows this is "CONOUT$", on unix systems this is "/dev/tty"
+pub const OutputState = @import("state.zig").OutputState;
+pub const InputState = @import("state.zig").InputState;
+
+/// Returns the terminal output file, On windows this is "CONOUT$", on unix systems this is "/dev/tty".
 ///
 /// For TUI applications, prefer this function over standard output.
 /// This is especially important on older Windows consoles or when using
 /// the WinAPI fallback, where using standard output for alternatescreen
 /// operations may cause the original screen contents to be lost.
-pub inline fn sysout(io: std.Io) !std.Io.File{
+pub inline fn sysOut(io: std.Io) !std.Io.File{
     return if(builtin.os.tag == .windows)
-        @import("sys/windows/root.zig").sysout(io)
+        @import("sys/windows/root.zig").sysOut()
     else 
-        @import("sys/unix.zig").sysout(io);
+        @import("sys/unix.zig").sysOut(io);
 }
 
-/// Manages terminal inits all terminal utlity structs  
-pub const Tty = struct{
-    outwriter: std.Io.File.Writer,
-    outputstate: OutputState,
-    cursor: Cursor,
-    style: Style,
-    terminal: Terminal,
+/// Returns the terminal input file, On windows this is "CONIN$", on unix systems this is "/dev/tty".
+///
+/// When using input on windows, you MUST use sysIN or you will not get events 
+pub inline fn sysIn(io: std.Io) !std.Io.File{
+    return if(builtin.os.tag == .windows)
+        @import("sys/windows/root.zig").sysIn()
+    else 
+        @import("sys/unix.zig").sysOut(io);
+}
 
-    pub fn init(self: *Tty, io: std.Io, file: std.Io.File, buffer: []u8) void{
-        self.outputstate = .init(&file);
-        self.outwriter = .init(file, io, buffer);
-        self.cursor = .{
-            .outputstate = &self.outputstate,
-            .writer = &self.outwriter
-        };
-
-        self.style = .{
-            .outputstate = &self.outputstate,
-            .writer = &self.outwriter
-        };
-    
-        self.terminal = .{
-            .outputstate = &self.outputstate,
-            .writer = &self.outwriter,
-        };
-    }    
-    
-    pub fn writer(self: *Tty) *std.Io.Writer{
-        return &self.outwriter.interface;
+pub const CodePageInfo = if(builtin.os.tag == .windows)
+    struct{i: std.os.windows.UINT, o: std.os.windows.UINT} 
+else 
+    struct{};
+/// This function sets CodePage to UTF-8, this function does nothing on unix systems 
+pub fn enableCp() !CodePageInfo{
+    if(builtin.os.tag == .windows){
+        const win = @import("sys/windows/root.zig");
+        const out = win.winapi.GetConsoleOutputCP();
+        const in = win.winapi.GetConsoleCP();
+        if(out == 0 or in == 0) return error.FailedToEnableCp;
+        
+        if(win.winapi.SetConsoleCP(65001) == .FALSE) return error.FailedToEnableCp;
+        if(win.winapi.SetConsoleOutputCP(65001) == .FALSE) return error.FailedToEnableCp;
+        return .{.o = out, .i = in};
+    }else{
+        return .{};
     }
-};
+}
+
+/// This restore the original CodePage
+pub fn restoreCp(cp: CodePageInfo) !void{
+    if(builtin.os.tag == .windows){
+        const win = @import("sys/windows/root.zig");
+        if(win.winapi.SetConsoleCP(cp.i) == .FALSE) return error.FailedToEnableCp;
+        if(win.winapi.SetConsoleOutputCP(cp.o) == .FALSE) return error.FailedToEnableCp;
+    }
+}

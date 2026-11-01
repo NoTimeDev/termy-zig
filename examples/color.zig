@@ -2,37 +2,34 @@ const std = @import("std");
 const termy = @import("termy");
 
 pub fn main(init: std.process.Init) !void {
-    const stdout = try termy.sysout(init.io);
+    const stdout = try termy.sysOut(init.io);
     var buffer: [1024]u8 = undefined;
 
-    var outputstate: termy.OutputState = .init(&stdout);
+    var outputstate: termy.OutputState = .init(stdout);
     var writer: std.Io.File.Writer = .init(stdout, init.io, &buffer);
 
-    var style: termy.Style = .{
-        .outputstate = &outputstate,
-        .writer = &writer,
-    };
+    var style: termy.Style = .init(&outputstate, &writer);
 
     try writer.interface.writeAll("termy - Colors and styles\n\n");
 
     // Standard foreground colors
     try writer.interface.writeAll("Standard colors:\n");
-    
+
     try style.setForegroundColor(.Red);
     try writer.interface.writeAll("Red ");
 
     try style.setForegroundColor(.Green);
     try writer.interface.writeAll("Green ");
-    
+
     try style.setForegroundColor(.Blue);
     try writer.interface.writeAll("Blue ");
-    
+
     try style.setForegroundColor(.Yellow);
     try writer.interface.writeAll("Yellow ");
-    
+
     try style.setForegroundColor(.Magenta);
     try writer.interface.writeAll("Magenta ");
-    
+
     try style.setForegroundColor(.Cyan);
     try writer.interface.writeAll("Cyan\n");
 
@@ -42,42 +39,42 @@ pub fn main(init: std.process.Init) !void {
     // Bright foreground colors
     try style.setForegroundColor(.BrightRed);
     try writer.interface.writeAll("Bright red ");
-    
+
     try style.setForegroundColor(.BrightGreen);
     try writer.interface.writeAll("Bright green ");
-    
+
     try style.setForegroundColor(.BrightBlue);
     try writer.interface.writeAll("Bright blue ");
-    
+
     try style.setForegroundColor(.BrightYellow);
     try writer.interface.writeAll("Bright yellow\n");
 
     try style.setForegroundColor(.Reset);
-    
+
     try writer.interface.writeAll("\nBackground colors:\n");
 
     // Background colors
     try style.setBackgroundColor(.Red);
     try writer.interface.writeAll(" Red ");
-    
+
     try style.setBackgroundColor(.Green);
     try writer.interface.writeAll(" Green ");
-    
+
     try style.setBackgroundColor(.Blue);
     try writer.interface.writeAll(" Blue ");
-    
+
     try style.setBackgroundColor(.Reset);
     try writer.interface.writeAll("\n\n");
 
     // RGB foreground colors
     try writer.interface.writeAll("RGB colors: ");
-    
+
     try style.setForegroundColor(.{
         .Rgb = .{ .r = 255, .g = 128, .b = 0 },
     });
-    
+
     try writer.interface.writeAll("Orange ");
-    
+
     try style.setForegroundColor(.{
         .Rgb = .{ .r = 180, .g = 80, .b = 255 },
     });

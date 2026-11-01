@@ -1,5 +1,5 @@
 const std = @import("std");
-pub const OutputBackend = enum {
+pub const Backend = enum {
     fallback,
     vt,
     native,
@@ -10,10 +10,11 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const out = b.option(
-        OutputBackend, "out", "Output Backend: fallback, vt, native"
+        Backend, "out", "Output Backend: fallback, vt, native (default: fallback)"
     ) orelse .fallback;
+    
     const options = b.addOptions();
-    options.addOption(OutputBackend, "out", out);
+    options.addOption(Backend, "out", out);
 
     const mod = b.addModule("termy", .{
         .root_source_file = b.path("src/root.zig"),
@@ -46,6 +47,7 @@ pub fn build(b: *std.Build) void {
     const example_step = b.step("example", "Build and run all example programs");
     for([_][]const u8{
         "examples/color.zig",
+        "examples/project_generator.zig"
     }) |path|{
         const name = std.fs.path.stem(path);
 

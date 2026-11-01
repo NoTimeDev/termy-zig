@@ -29,6 +29,13 @@ pub const Cursor = struct{
         BlinkingBar,
     };
 
+    /// Inits a `Cursor` structure
+    pub inline fn init(outputstate: *OutputState, writer: *std.Io.File.Writer) Cursor{
+        return .{
+            .outputstate = outputstate,
+            .writer = writer
+        };
+    }
     /// Moves the cursor n cells down 
     pub fn moveDown(self: *Cursor, n: u16) !void{
         if(builtin.os.tag == .windows and options.out != .vt){

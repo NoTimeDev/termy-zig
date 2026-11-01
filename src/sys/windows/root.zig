@@ -41,8 +41,7 @@ pub fn enableOutVT(handle: windows.HANDLE) void{
     }
 }
 
-pub inline fn sysout(io: std.Io) !std.Io.File{
-    _ = io;
+pub inline fn sysOut() !std.Io.File{
     const handle = winapi.CreateFileW(
         std.unicode.utf8ToUtf16LeStringLiteral("CONOUT$"), 
         winapi.GENERIC_READ | winapi.GENERIC_WRITE,
@@ -61,3 +60,55 @@ pub inline fn sysout(io: std.Io) !std.Io.File{
     };
 }
 
+pub inline fn sysIn() !std.Io.File{
+    const handle = winapi.CreateFileW(
+        std.unicode.utf8ToUtf16LeStringLiteral("CONIN$"), 
+        winapi.GENERIC_READ | winapi.GENERIC_WRITE,
+        winapi.FILE_SHARE_READ,
+        null, 
+        winapi.OPEN_EXISTING, 
+        0, 
+        null
+    );
+    if(handle == windows.INVALID_HANDLE_VALUE){
+        return error.FailedToOpenTty;
+    }
+    return .{
+        .handle = handle,
+        .flags = .{ .nonblocking = false }
+    };
+}
+
+const event = @import("../../event.zig");
+pub fn translateKey(record: winapi.KEY_EVENT_RECORD) event.KeyEvent{
+    const code: event.KeyCode = if(record.uChar.UnicodeChar != 0)
+        .{ .Char = @as(u21, @intCast(record.uChar.UnicodeChar)) }
+    else 
+        switch (record.wVirtualKeyCode) {
+            winapi.VK_BACK => .Backspace,
+            winapi.VK_TAB => .Tab,
+            winapi.VK_RETURN => .Enter,
+            winapi.VK_ESCAPE => .Esc,
+
+            winapi.VK_PRIOR => .PageUp,
+            winapi.VK_NEXT => .PageDown,
+            winapi.VK_END => .End,
+            winapi.VK_HOME => .Home,
+
+            winapi.VK_LEFT => .Left,
+            winapi.VK_UP => .Up,
+            winapi.VK_RIGHT => .Right,
+            winapi.VK_DOWN => .Down,
+
+            winapi.VK_INSERT => .Insert,
+            winapi.VK_DELETE => .Delete,
+
+            winapi.VK_F1...winapi.VK_F24 => |k|
+                .{ .F = @as(u8, @intCast(k - winapi.VK_F1 + 1)) },
+
+            else => .{.Char = @as(u21, @intCast(record.wVirtualKeyCode))},
+        };
+    return .{
+        .code = code,
+    };
+} 

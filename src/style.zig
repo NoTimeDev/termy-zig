@@ -136,6 +136,15 @@ pub const Style = struct{
     else
         {};
 
+
+    /// Inits a `Style` structure
+    pub inline fn init(outputstate: *OutputState, writer: *std.Io.File.Writer) Style{
+        return .{
+            .outputstate = outputstate,
+            .writer = writer
+        };
+    }
+
     /// Sets the terminal color 
     pub fn setForegroundColor(self: *Style, color: Color) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
