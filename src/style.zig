@@ -108,6 +108,7 @@ pub const Style = struct{
                 const win = @import("sys/windows/root.zig").winapi;
                 return switch (color) {
                     .Black => 0,
+                    .BrightBlack => win.FOREGROUND_INTENSITY,
                     
                     .Red => win.FOREGROUND_RED,
                     .BrightRed => win.FOREGROUND_RED | win.FOREGROUND_INTENSITY,

@@ -123,9 +123,9 @@ pub fn main(init: std.process.Init) !void {
         try writer.interface.print("{s}: ", .{current.prompt});
 
         if (current.value.items.len == 0) {
-            try style.setAttribute(.Dim);
+            try style.setForegroundColor(.BrightBlack);
             try writer.interface.writeAll(current.placeholder);
-            try style.setAttribute(.NormalIntensity);
+            try style.setForegroundColor(.Reset);
 
             try cursor.moveToColumn(
                 @intCast(current.prompt.len + 3),
