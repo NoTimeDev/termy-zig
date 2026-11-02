@@ -4,6 +4,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const options = @import("options");
 
+
 /// Provides functions to change how the terminal behaves
 pub const Terminal = struct {
     outputstate: *OutputState,
@@ -26,6 +27,13 @@ pub const Terminal = struct {
         UntilRowEnd,
     };
 
+    /// Enhancements for terminal input 
+    pub const Enhancements = struct{
+        pub const DISAMBIGUATE_ESCAPE_CODES: u8 = 0b0001;
+        pub const REPORT_EVENT_TYPES: u8 = 0b0010;
+        pub const REPORT_ALTERNATE_KEYS: u8 = 0b0100;
+        pub const REPORT_ALL_KEYS_AS_ESCAPE_CODES: u8 = 0b1000;
+    };
     /// Inits a `Terminal` structure
     pub inline fn init(outputstate: *OutputState, inputstate: *InputState, writer: *std.Io.File.Writer, input_handle: std.Io.File.Handle) Terminal{
         return .{
@@ -35,7 +43,57 @@ pub const Terminal = struct {
             .inhandle = input_handle
         };
     }
-    
+   
+    /// Enables reporting on mouse events 
+    pub fn enableMouseCapture(self: *Terminal) !void{
+        if(builtin.os.tag != .windows){
+            self.writer.interface.writeAll("\x1b[?1000h") catch return error.FailedToEnableMouseCapture;
+            self.writer.interface.writeAll("\x1b[?1002h") catch return error.FailedToEnableMouseCapture;
+            self.writer.interface.writeAll("\x1b[?1003h") catch return error.FailedToEnableMouseCapture;
+            self.writer.interface.writeAll("\x1b[?1015h") catch return error.FailedToEnableMouseCapture;
+            self.writer.interface.writeAll("\x1b[?1006h") catch return error.FailedToEnableMouseCapture;
+        }
+    }
+
+    /// disables reporting on mouse events
+    pub fn disablesMouseCapture(self: *Terminal) !void{
+        if(builtin.os.tag != .windows){
+            self.writer.interface.writeAll("\x1b[?1006l") catch return error.FailedToDisableMouseCapture;
+            self.writer.interface.writeAll("\x1b[?1015l") catch return error.FailedToDisableMouseCapture;
+            self.writer.interface.writeAll("\x1b[?1003l") catch return error.FailedToDisableMouseCapture;
+            self.writer.interface.writeAll("\x1b[?1002l") catch return error.FailedToDisableMouseCapture;
+            self.writer.interface.writeAll("\x1b[?1000l") catch return error.FailedToDisableMouseCapture;
+        }
+    }
+
+    /// enable reporting on focus changes
+    pub fn enableFocusChange(self: *Terminal) !void{
+        if(builtin.os.tag != .windows){
+            self.writer.interface.writeAll("\x1b[?1004h") catch return error.FailedToEnableFocusChnage;
+        }
+    }
+
+    /// disable reporting on focus changes
+    pub fn disablesFocusChange(self: *Terminal) !void{
+        if(builtin.os.tag != .windows){
+            self.writer.interface.writeAll("\x1b[?1004l") catch return error.FailedToDisableFocusChnage;
+        }
+    }
+
+    /// Enables Keyboard enhancements, this function does nothing on windows
+    pub fn enableEnhancements(self: *Terminal, enhancements: u8) !void{
+        if(builtin.os.tag != .windows){
+            self.writer.interface.print("\x1b[>{}u", .{enhancements}) catch return error.FailedToEnableEnhancements;
+        }
+    }
+
+    /// Enables Keyboard enhancements, this function does nothing on windows
+    pub fn disableEnhancements(self: *Terminal) !void{
+        if(builtin.os.tag != .windows){
+            self.writer.interface.writeAll("\x1b[<u") catch return error.FailedToEnableEnhancements;
+        }
+    }
+
     /// Enables raw mode
     pub fn enableRawMode(self: *Terminal) !void{
         if(builtin.os.tag == .windows){

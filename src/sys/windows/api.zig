@@ -196,8 +196,15 @@ pub extern "kernel32" fn FlushConsoleInputBuffer(
     hConsoleInput: windows.HANDLE
 ) callconv(.winapi) windows.BOOL;
 
+pub extern "user32" fn MapVirtualKeyW(
+    uCode: windows.UINT,
+    uMapType: windows.UINT
+) callconv(.winapi) windows.UINT;
+
 pub extern "kernel32" fn GetConsoleCP() callconv(.winapi) windows.UINT;
 pub extern "kernel32" fn GetConsoleOutputCP() callconv(.winapi) windows.UINT;
+
+pub const MAPVK_VSC_TO_VK_EX: windows.UINT = 3;
 
 pub const FOCUS_EVENT: windows.WORD = 0x0010;
 pub const KEY_EVENT: windows.WORD = 0x0001;
@@ -235,6 +242,16 @@ pub const BACKGROUND_RED: u16                          = 0x0040;
 pub const BACKGROUND_INTENSITY: u16                    = 0x0080;
 pub const FG_MASK: u16                                 = 0x000F;
 pub const BG_MASK: u16                                 = 0x00F0;
+
+pub const CAPSLOCK_ON: u16 = 0x0080;
+pub const ENHANCED_KEY: u16 = 0x0100;
+pub const LEFT_ALT_PRESSED: u16 = 0x0002;
+pub const LEFT_CTRL_PRESSED: u16 = 0x0008;
+pub const NUMLOCK_ON: u16 = 0x0020;
+pub const RIGHT_ALT_PRESSED: u16 = 0x0001;
+pub const RIGHT_CTRL_PRESSED: u16 = 0x0004;
+pub const SCROLLLOCK_ON: u16 = 0x0040;
+pub const SHIFT_PRESSED: u16 = 0x0010;
 
 pub const VK_LBUTTON: windows.WORD = 0x01;
 pub const VK_RBUTTON: windows.WORD = 0x02;

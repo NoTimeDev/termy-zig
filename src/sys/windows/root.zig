@@ -82,7 +82,7 @@ pub inline fn sysIn() !std.Io.File{
 const event = @import("../../event.zig");
 pub fn translateKey(record: winapi.KEY_EVENT_RECORD) event.KeyEvent{
     const code: event.KeyCode = 
-        switch (record.wVirtualKeyCode) {
+        vcode: switch (record.wVirtualKeyCode){
             winapi.VK_BACK => .Backspace,
             winapi.VK_TAB => .Tab,
             winapi.VK_RETURN => .Enter,
@@ -98,21 +98,62 @@ pub fn translateKey(record: winapi.KEY_EVENT_RECORD) event.KeyEvent{
             winapi.VK_RIGHT => .Right,
             winapi.VK_DOWN => .Down,
 
+            winapi.VK_MEDIA_PLAY_PAUSE => .MediaPlayPause,
+            winapi.VK_MEDIA_STOP => .MediaStop,
+            winapi.VK_MEDIA_NEXT_TRACK => .MediaTrackNext,
+            winapi.VK_MEDIA_PREV_TRACK => .MediaTrackPrevious,
+            winapi.VK_VOLUME_DOWN => .MediaLowerVolume,
+            winapi.VK_VOLUME_UP => .MediaRaiseVolume,
+            winapi.VK_VOLUME_MUTE => .MediaMuteVolume,
+
             winapi.VK_INSERT => .Insert,
             winapi.VK_DELETE => .Delete,
+            winapi.VK_SHIFT, winapi.VK_CONTROL, winapi.VK_MENU => continue :vcode @intCast(winapi.MapVirtualKeyW(record.wVirtualScanCode, winapi.MAPVK_VSC_TO_VK_EX)),
+            
+            winapi.VK_LSHIFT => event.KeyCode{.KeyModifier = .LeftShift},
+            winapi.VK_RSHIFT => event.KeyCode{.KeyModifier = .RightShift},
+            
+            winapi.VK_LCONTROL => event.KeyCode{.KeyModifier = .LeftControl},
+            winapi.VK_RCONTROL => event.KeyCode{.KeyModifier = .RightControl},
+            
+            winapi.VK_LMENU => event.KeyCode{.KeyModifier = .LeftAlt},
+            winapi.VK_RMENU => event.KeyCode{.KeyModifier = .RightAlt},
 
-            winapi.VK_SHIFT, winapi.VK_CAPITAL => event.KeyCode{ .KeyModifier = .{ .Shift = true } },
-            winapi.VK_CONTROL => event.KeyCode{ .KeyModifier = .{ .Control = true } },
-            winapi.VK_MENU => event.KeyCode{ .KeyModifier = .{ .Alt = true } },
+            winapi.VK_LWIN => event.KeyCode{.KeyModifier = .LeftSuper},
+            winapi.VK_RWIN => event.KeyCode{.KeyModifier = .RightSuper},
+
             winapi.VK_F1...winapi.VK_F24 => |k|
                 .{ .F = @as(u8, @intCast(k - winapi.VK_F1 + 1)) },
 
             else => if(record.uChar.UnicodeChar != 0)
                     .{ .Char = @intCast(record.uChar.UnicodeChar) }
-                else 
-                    .{ .Char = @intCast(record.wVirtualKeyCode) },
+                else
+                    .Null
         };
+    const kind: event.KeyKind = if (record.bKeyDown == .FALSE)
+            .Release
+        else if (record.wRepeatCount > 1)
+            .{ .Repeat = record.wRepeatCount }
+        else
+            .Press;
+
     return .{
         .code = code,
+        .kind = kind,
+        .state = .{
+            .CapsLock = (record.dwControlKeyState & winapi.CAPSLOCK_ON) != 0,
+            .NumLock = (record.dwControlKeyState & winapi.NUMLOCK_ON) != 0,
+            .KeyPad = (record.wVirtualKeyCode >= winapi.VK_NUMPAD0 and record.wVirtualKeyCode <= winapi.VK_NUMPAD9)
+        },
+        .modifier = .{
+            .Shift = (record.dwControlKeyState & winapi.SHIFT_PRESSED) != 0,
+            .Control = (record.dwControlKeyState &
+                (winapi.LEFT_CTRL_PRESSED | winapi.RIGHT_CTRL_PRESSED)) != 0,
+            .Alt = (record.dwControlKeyState &
+                (winapi.LEFT_ALT_PRESSED | winapi.RIGHT_ALT_PRESSED)) != 0,
+            .Super = record.wVirtualKeyCode == winapi.VK_LWIN or record.wVirtualKeyCode == winapi.VK_RWIN,
+            .Hyper = false,
+            .Meta = false
+        }
     };
 } 

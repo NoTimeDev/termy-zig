@@ -3,7 +3,7 @@ const termy = @import("termy");
 
 // This file just has some abitrary test!
 pub fn main(init: std.process.Init) !void{
-    const stdin = try termy.sysIn(init.io);
+    const stdin = std.Io.File.stdin();
     const stdout = std.Io.File.stdout();
 
     var outstate: termy.OutputState = .init(stdout);
@@ -24,6 +24,13 @@ pub fn main(init: std.process.Init) !void{
     const cpi = try termy.enableCp();
     defer termy.restoreCp(cpi) catch {};
 
+    const En = termy.Terminal.Enhancements;
+    try terminal.enableEnhancements(En.DISAMBIGUATE_ESCAPE_CODES | En.REPORT_EVENT_TYPES | En.REPORT_ALL_KEYS_AS_ESCAPE_CODES);
+    defer terminal.disableEnhancements() catch {};
+    
+    try terminal.enableFocusChange();
+    defer terminal.disablesFocusChange() catch {};
+
     try terminal.enableRawMode();
     defer terminal.disableRawMode() catch {};
     try writer.flush();
@@ -42,7 +49,8 @@ pub fn main(init: std.process.Init) !void{
                         },
                         else => {},
                     }
-                }
+                },
+                else => {},
             }
         }
     }

@@ -13,16 +13,17 @@ pub const Input = struct {
     len: usize = 0,
 
     pub fn init(inputstate: *InputState, io: std.Io, file: std.Io.File) Input{
-        if(builtin.os.tag == .windows){
-            const win = @import("sys/windows/root.zig");
-            _ = win.winapi.FlushConsoleInputBuffer(file.handle);
-        }
+//         if(builtin.os.tag == .windows){
+//             const win = @import("sys/windows/root.zig");
+//             _ = win.winapi.FlushConsoleInputBuffer(file.handle);
+//         }
         return .{
             .io = io,
             .inputstate = inputstate,
             .file = file,
         };
     }
+
 
     /// Polls for an event in a given time, true - event is available, false - event is not available
     pub fn poll(self: *Input, timeout: std.Io.Duration) !bool{
@@ -59,12 +60,15 @@ pub const Input = struct {
 
             switch (record.EventType) {
                 win.winapi.KEY_EVENT => {
-                    if(record.Event.KeyEvent.bKeyDown != .FALSE){
-                        return .{ .key = win.translateKey(record.Event.KeyEvent)};
+                    return .{ .key = win.translateKey(record.Event.KeyEvent)};
+                },
+                win.winapi.FOCUS_EVENT => {
+                    if(record.Event.FocusEvent.bSetFocus == .FALSE){
+                        return .FocusLost;
                     }else{
-                        return read(self);
+                        return .FocusGained;
                     }
-                }, 
+                },
                 else => return read(self),
             }
         }else{
@@ -92,6 +96,11 @@ pub const Input = struct {
                         if (b == '\x1b' and remaining == 1) {
                             if (!(self.poll(.fromMilliseconds(20)) catch return error.FailedToReadEvent)){
                                 return .{ .key = .{ .code = .Esc } };
+                            }
+                        }
+                        if(b == '[' and p.state == .csi and remaining == 1){
+                            if (!(self.poll(.fromMilliseconds(20)) catch return error.FailedToReadEvent)){
+                                return .{ .key = .{ .code = .{ .Char = '[' }, .modifier = .{ .Alt = true } } };
                             }
                         }
                     }

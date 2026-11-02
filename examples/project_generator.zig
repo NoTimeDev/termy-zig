@@ -29,11 +29,14 @@ pub fn main(init: std.process.Init) !void {
         stdin,
     );
 
+
     var cursor: termy.Cusor = .init(&output_state, &writer);
     var style: termy.Style = .init(&output_state, &writer);
 
     defer writer.flush() catch {};
 
+    try terminal.enableEnhancements(termy.Terminal.Enhancements.REPORT_ALL_KEYS_AS_ESCAPE_CODES | termy.Terminal.Enhancements.REPORT_EVENT_TYPES | termy.Terminal.Enhancements.REPORT_ALTERNATE_KEYS | termy.Terminal.Enhancements.DISAMBIGUATE_ESCAPE_CODES);
+    defer terminal.disableEnhancements() catch {};
     const cpi = try termy.enableCp();
     defer termy.restoreCp(cpi) catch {};
 
@@ -63,55 +66,59 @@ pub fn main(init: std.process.Init) !void {
     var cancelled = false;
 
     while (true) {
-        if (try input.poll(.fromMilliseconds(20))) {
+        if (try input.poll(.fromMilliseconds(500))) {
             const event = try input.read();
 
             switch (event) {
-                .key => |key| switch (key.code) {
-                    .Esc => {
-                        cancelled = true;
-                        break;
-                    },
-
-                    .Backspace => {
-                        const current = &fields[current_field];
-
-                        if (current.value.items.len != 0) {
-                            _ = current.value.pop();
-                        }
-                    },
-
-                    .Enter => {
-                        const current = &fields[current_field];
-
-                        try cursor.moveToColumn(0);
-                        try terminal.clear(.CurrentRow);
-
-                        try writer.interface.print(
-                            "{s}: ",
-                            .{current.prompt},
-                        );
-                        try writer.interface.writeAll(current.value.items);
-
-                        if (current_field + 1 == fields.len) {
+                .key => |key|{ 
+                    if(key.kind != .Press) continue;
+                    switch (key.code) {
+                        .Esc => {
+                            cancelled = true;
                             break;
-                        }
+                        },
 
-                        current_field += 1;
-                        try writer.interface.writeAll("\n");
-                    },
+                        .Backspace => {
+                            const current = &fields[current_field];
 
-                    .Char => |ch| {
-                        const current = &fields[current_field];
+                            if (current.value.items.len != 0) {
+                                _ = current.value.pop();
+                            }
+                        },
 
-                        try current.value.append(
-                            std.heap.smp_allocator,
-                            @intCast(ch),
-                        );
-                    },
+                        .Enter => {
+                            const current = &fields[current_field];
 
-                    else => {},
+                            try cursor.moveToColumn(0);
+                            try terminal.clear(.CurrentRow);
+
+                            try writer.interface.print(
+                                "{s}: ",
+                                .{current.prompt},
+                            );
+                            try writer.interface.writeAll(current.value.items);
+
+                            if (current_field + 1 == fields.len) {
+                                break;
+                            }
+
+                            current_field += 1;
+                            try writer.interface.writeAll("\n");
+                        },
+
+                        .Char => |ch| {
+                            const current = &fields[current_field];
+
+                            try current.value.append(
+                                std.heap.smp_allocator,
+                                @intCast(ch),
+                            );
+                        },
+
+                        else => {},
+                    }
                 },
+                else => {},
             }
         }
 

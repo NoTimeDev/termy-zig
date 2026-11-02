@@ -1,10 +1,26 @@
 pub const Event = union(enum){
-    key: KeyEvent
+    key: KeyEvent,
+    FocusGained,
+    FocusLost,
 };
 
 pub const KeyEvent = struct {
     code: KeyCode, 
     modifier: KeyModifiers = .{},
+    kind: KeyKind = .Press,
+    state: KeyState = .{},
+};
+
+pub const KeyState = packed struct{
+    NumLock: bool = false,
+    KeyPad: bool = false,
+    CapsLock: bool = false,   
+};
+
+pub const KeyKind = union(enum){
+    Press,
+    Repeat: u16,
+    Release,
 };
 
 pub const KeyCode = union(enum){
@@ -12,6 +28,7 @@ pub const KeyCode = union(enum){
     Enter,
     Left,
     Right,
+    BackTab,
     Up,
     Down,
     Home,
@@ -19,7 +36,6 @@ pub const KeyCode = union(enum){
     PageUp,
     PageDown,
     Tab,
-    BackTab,
     Delete,
     Insert,
     F: u8,
@@ -33,12 +49,44 @@ pub const KeyCode = union(enum){
     Pause,
     Menu,
     KeypadBegin,
-    KeyModifier: KeyModifiers,
+    MediaPlay,
+    MediaPause,
+    MediaPlayPause,
+    MediaReverse,
+    MediaStop,
+    MediaFastForward,
+    MediaRewind,
+    MediaTrackNext,
+    MediaTrackPrevious,
+    MediaRecord,
+    MediaLowerVolume,
+    MediaRaiseVolume,
+    MediaMuteVolume,
+    KeyModifier: KeyModifierCode,
+};
+
+pub const KeyModifierCode = enum {
+    LeftShift,
+    LeftControl,
+    LeftAlt,
+    LeftSuper,
+    LeftHyper,
+    LeftMeta,
+    RightShift,
+    RightControl,
+    RightAlt,
+    RightSuper,
+    RightHyper,
+    RightMeta,
+    IsoLevel3Shift,
+    IsoLevel5Shift,
 };
 
 pub const KeyModifiers = packed struct{
     Shift: bool = false,
     Control: bool = false, 
     Alt: bool = false,
-    _: u5 = 0,
+    Super: bool = false,
+    Hyper: bool = false,
+    Meta: bool = false
 };

@@ -10,6 +10,8 @@ pub const event = @import("event.zig");
 pub const OutputState = @import("state.zig").OutputState;
 pub const InputState = @import("state.zig").InputState;
 
+///TODO: @compileError("NORMALIZE INPUT: NO MATTER THE SYSTEM OR FLAGS THE INPUT YOU RECIVE SHOULD BE SOMEWHAT SIMILAR(EG shift + char)");
+
 /// Returns the terminal output file, On windows this is "CONOUT$", on unix systems this is "/dev/tty".
 ///
 /// For TUI applications, prefer this function over standard output.
