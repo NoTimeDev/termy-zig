@@ -56,7 +56,23 @@ pub fn main(init: std.process.Init) !void{
                         else => {},
                     }
                 },
-                else => {},
+                .resize => {
+                    std.debug.print("Hello Resize!\n", .{});
+                },
+                .mouse => |mouse|{
+                    switch (mouse.kind) {
+                        .Down => std.debug.print("Down", .{}),
+                        .Up => std.debug.print("Up", .{}),
+                        .Moved => std.debug.print("Moved", .{}),
+                        .Drag => std.debug.print("Drag", .{}),
+                        .ScrollUp => std.debug.print("ScrollUp", .{}),
+                        .ScrollDown => std.debug.print("ScrollDown", .{}),
+                        .ScrollLeft => std.debug.print("ScrollLeft", .{}),
+                        .ScrollRight => std.debug.print("ScrollRight", .{}),
+                    }
+                },
+                .FocusGained => std.debug.print("FocusGained", .{}),
+                .FocusLost => std.debug.print("FocusLost", .{}),
             }
         }
     }

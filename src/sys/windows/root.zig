@@ -101,6 +101,7 @@ pub inline fn sysIn() !std.Io.File{
 }
 
 pub fn translateMouse(last_mouse_event: winapi.MOUSE_EVENT_RECORD, record: winapi.MOUSE_EVENT_RECORD) event.MouseEvent{
+    const delta: i16 = @bitCast(@as(u16, @truncate(record.dwButtonState >> 16)));
     const kind: event.MouseEventKind = switch (record.dwEventFlags) {
         winapi.PRESSED_OR_RELEASED, winapi.DOUBLE_CLICK => if(
             record.dwButtonState & winapi.FROM_LEFT_1ST_BUTTON_PRESSED != 0 and 
@@ -144,12 +145,12 @@ pub fn translateMouse(last_mouse_event: winapi.MOUSE_EVENT_RECORD, record: winap
             }
         },
 
-        winapi.MOUSE_WHEELED =>if(record.dwButtonState < 0)
+        winapi.MOUSE_WHEELED =>if(delta < 0)
             event.MouseEventKind.ScrollDown
         else 
             event.MouseEventKind.ScrollUp,
 
-        winapi.MOUSE_HWHEELED => if(record.dwButtonState < 0)
+        winapi.MOUSE_HWHEELED => if(delta < 0)
             event.MouseEventKind.ScrollLeft
         else 
             event.MouseEventKind.ScrollRight,
