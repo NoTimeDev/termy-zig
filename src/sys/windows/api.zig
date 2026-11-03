@@ -217,6 +217,7 @@ pub const ENABLE_LINE_INPUT: u32                       = 0x0002;
 pub const ENABLE_ECHO_INPUT: u32                       = 0x0004;
 pub const ENABLE_VIRTUAL_TERMINAL_INPUT: u32           = 0x0200;
 pub const ENABLE_QUICK_EDIT_MODE: u32 = 0x0040;
+pub const ENABLE_MOUSE_INPUT: u32 = 0x0010;
 
 pub const ENABLE_WRAP_AT_EOL_OUTPUT: u32 =0x0002;
 pub const ENABLE_PROCESSED_OUTPUT: u32                 = 0x0001;
@@ -242,6 +243,18 @@ pub const BACKGROUND_RED: u16                          = 0x0040;
 pub const BACKGROUND_INTENSITY: u16                    = 0x0080;
 pub const FG_MASK: u16                                 = 0x000F;
 pub const BG_MASK: u16                                 = 0x00F0;
+
+pub const FROM_LEFT_1ST_BUTTON_PRESSED: u32 = 0x0001;
+pub const RIGHTMOST_BUTTON_PRESSED: u32 = 0x0002;
+pub const FROM_LEFT_2ND_BUTTON_PRESSED: u32 = 0x0004;
+pub const FROM_LEFT_3RD_BUTTON_PRESSED: u32 = 0x0008;
+pub const FROM_LEFT_4TH_BUTTON_PRESSED: u32 = 0x0010;
+
+pub const PRESSED_OR_RELEASED: u32 = 0;
+pub const DOUBLE_CLICK: u32 = 0x0002;
+pub const MOUSE_HWHEELED: u32 = 0x0008;
+pub const MOUSE_MOVED: u32 = 0x0001;
+pub const MOUSE_WHEELED: u32 = 0x0004;
 
 pub const CAPSLOCK_ON: u16 = 0x0080;
 pub const ENHANCED_KEY: u16 = 0x0100;

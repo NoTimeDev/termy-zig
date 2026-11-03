@@ -11,7 +11,7 @@ pub const WindowsOutputState = struct {
         .Y = 0,
     },
     original_console_state: ?win.winapi.CONSOLE_SCREEN_BUFFER_INFO = null,
-reversed: bool = false,
+    reversed: bool = false,
     original_handle: windows.HANDLE = windows.INVALID_HANDLE_VALUE,
     supported: win.WinSupportedFeatures,
     pub fn init(file: std.Io.File) WindowsOutputState{
@@ -42,13 +42,13 @@ pub const WindowsInputState = struct {
     const win = @import("sys/windows/root.zig");
     const windows = std.os.windows;
     original_state: windows.DWORD = undefined,
-    
-    
+    mouse_event: win.winapi.MOUSE_EVENT_RECORD = undefined,
+
     pub inline fn init(file: std.Io.File) WindowsInputState{
         _ = file;
-        return .{
-
-        };
+        var is = WindowsInputState{};
+        is.mouse_event.dwButtonState = 0;
+        return is;
     }
 };
 

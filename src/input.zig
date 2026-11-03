@@ -69,7 +69,15 @@ pub const Input = struct {
                         return .FocusGained;
                     }
                 },
-                else => return read(self),
+                win.winapi.MOUSE_EVENT => {
+                    const e: event.Event = .{ .mouse = win.translateMouse(self.inputstate.mouse_event, record.Event.MouseEvent) };
+                    self.inputstate.mouse_event = record.Event.MouseEvent;
+                    return e;
+                },
+                win.winapi.WINDOW_BUFFER_SIZE_EVENT => {
+                    return .{ .resize = .{@intCast(record.Event.WindowBufferSizeEvent.dwSize.X), @intCast(record.Event.WindowBufferSizeEvent.dwSize.Y)} };
+                },
+                else => return event.Event{.key = .{ .code = .Null }},
             }
         }else{
             _ = self.poll(.fromMilliseconds(-1)) catch return error.FailedToReadEvent;

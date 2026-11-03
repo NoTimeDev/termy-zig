@@ -1,7 +1,37 @@
 pub const Event = union(enum){
     key: KeyEvent,
+    mouse: MouseEvent,
+    resize: struct {u16, u16},
     FocusGained,
     FocusLost,
+};
+
+pub const MouseEvent = struct {
+    kind: MouseEventKind,
+    column: u16,
+    row: u16,
+    modifier: KeyModifiers,
+};
+
+pub const MouseEventKind = union(enum){
+    /// Mouse button pressed down 
+    Down: MouseButton,
+    /// Mouse button released 
+    Up: MouseButton,
+    /// Mouse moved while pressing the MouseButton
+    Drag: MouseButton,
+    Moved,
+    ScrollDown,
+    ScrollUp,
+    ScrollLeft,
+    ScrollRight,
+};
+
+pub const MouseButton = enum {
+    Left,
+    Right,
+    Middle,
+    Unknown,
 };
 
 pub const KeyEvent = struct {

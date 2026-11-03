@@ -52,6 +52,12 @@ pub const Terminal = struct {
             self.writer.interface.writeAll("\x1b[?1003h") catch return error.FailedToEnableMouseCapture;
             self.writer.interface.writeAll("\x1b[?1015h") catch return error.FailedToEnableMouseCapture;
             self.writer.interface.writeAll("\x1b[?1006h") catch return error.FailedToEnableMouseCapture;
+        }else{
+            const win = @import("sys/windows/root.zig");
+            var in_state: win.windows.DWORD = 0;
+
+            if(win.winapi.GetConsoleMode(self.inhandle, &in_state) == .FALSE) return error.FailedToEnableMouseCapture;
+            if(win.winapi.SetConsoleMode(self.inhandle, in_state | win.winapi.ENABLE_MOUSE_INPUT) == .FALSE) return error.FailedToEnableMouseCapture;
         }
     }
 
@@ -63,6 +69,12 @@ pub const Terminal = struct {
             self.writer.interface.writeAll("\x1b[?1003l") catch return error.FailedToDisableMouseCapture;
             self.writer.interface.writeAll("\x1b[?1002l") catch return error.FailedToDisableMouseCapture;
             self.writer.interface.writeAll("\x1b[?1000l") catch return error.FailedToDisableMouseCapture;
+        }else{
+            const win = @import("sys/windows/root.zig");
+            var in_state: win.windows.DWORD = 0;
+
+            if(win.winapi.GetConsoleMode(self.inhandle, &in_state) == .FALSE) return error.FailedToDisableMouseCapture;
+            if(win.winapi.SetConsoleMode(self.inhandle, in_state & ~win.winapi.ENABLE_MOUSE_INPUT) == .FALSE) return error.FailedToDisableMouseCapture;
         }
     }
 

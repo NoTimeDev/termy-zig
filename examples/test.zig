@@ -16,7 +16,10 @@ pub fn main(init: std.process.Init) !void{
     
     defer {
         for(x.items)|i|{
-            std.debug.print("{}\n", .{i});
+            var w: std.Io.Writer.Allocating = .init(std.heap.smp_allocator); 
+            defer w.deinit();
+            std.json.Stringify.value(i, .{.whitespace = .indent_2}, &w.writer) catch {};
+            std.debug.print("{s}\n", .{w.written()});
         }
     }
 
@@ -27,7 +30,10 @@ pub fn main(init: std.process.Init) !void{
     const En = termy.Terminal.Enhancements;
     try terminal.enableEnhancements(En.DISAMBIGUATE_ESCAPE_CODES | En.REPORT_EVENT_TYPES | En.REPORT_ALL_KEYS_AS_ESCAPE_CODES);
     defer terminal.disableEnhancements() catch {};
-    
+
+    try terminal.enableMouseCapture();
+    defer terminal.disablesMouseCapture() catch {};
+
     try terminal.enableFocusChange();
     defer terminal.disablesFocusChange() catch {};
 
