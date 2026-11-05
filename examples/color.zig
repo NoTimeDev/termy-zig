@@ -4,120 +4,118 @@ const termy = @import("termy");
 pub fn main(init: std.process.Init) !void {
     const stdout = try termy.sysOut(init.io);
     var buffer: [1024]u8 = undefined;
+    var tty: termy.Tty = .init(init.io, stdout, &buffer, null);
+    var style: termy.Style = .init(&tty);
+    const writer = tty.writer();
 
-    var outputstate: termy.OutputState = .init(stdout);
-    var writer: std.Io.File.Writer = .init(stdout, init.io, &buffer);
-
-    var style: termy.Style = .init(&outputstate, &writer);
-
-    try writer.interface.writeAll("termy - Colors and styles\n\n");
+    try writer.writeAll("termy - Colors and styles\n\n");
 
     // Standard foreground colors
-    try writer.interface.writeAll("Standard colors:\n");
+    try writer.writeAll("Standard colors:\n");
 
     try style.setForegroundColor(.Red);
-    try writer.interface.writeAll("Red ");
+    try writer.writeAll("Red ");
 
     try style.setForegroundColor(.Green);
-    try writer.interface.writeAll("Green ");
+    try writer.writeAll("Green ");
 
     try style.setForegroundColor(.Blue);
-    try writer.interface.writeAll("Blue ");
+    try writer.writeAll("Blue ");
 
     try style.setForegroundColor(.Yellow);
-    try writer.interface.writeAll("Yellow ");
+    try writer.writeAll("Yellow ");
 
     try style.setForegroundColor(.Magenta);
-    try writer.interface.writeAll("Magenta ");
+    try writer.writeAll("Magenta ");
 
     try style.setForegroundColor(.Cyan);
-    try writer.interface.writeAll("Cyan\n");
+    try writer.writeAll("Cyan\n");
 
     try style.setForegroundColor(.Reset);
-    try writer.interface.writeAll("\nBright colors:\n");
+    try writer.writeAll("\nBright colors:\n");
 
     // Bright foreground colors
     try style.setForegroundColor(.BrightRed);
-    try writer.interface.writeAll("Bright red ");
+    try writer.writeAll("Bright red ");
 
     try style.setForegroundColor(.BrightGreen);
-    try writer.interface.writeAll("Bright green ");
+    try writer.writeAll("Bright green ");
 
     try style.setForegroundColor(.BrightBlue);
-    try writer.interface.writeAll("Bright blue ");
+    try writer.writeAll("Bright blue ");
 
     try style.setForegroundColor(.BrightYellow);
-    try writer.interface.writeAll("Bright yellow\n");
+    try writer.writeAll("Bright yellow\n");
 
     try style.setForegroundColor(.Reset);
 
-    try writer.interface.writeAll("\nBackground colors:\n");
+    try writer.writeAll("\nBackground colors:\n");
 
     // Background colors
     try style.setBackgroundColor(.Red);
-    try writer.interface.writeAll(" Red ");
+    try writer.writeAll(" Red ");
 
     try style.setBackgroundColor(.Green);
-    try writer.interface.writeAll(" Green ");
+    try writer.writeAll(" Green ");
 
     try style.setBackgroundColor(.Blue);
-    try writer.interface.writeAll(" Blue ");
+    try writer.writeAll(" Blue ");
 
     try style.setBackgroundColor(.Reset);
-    try writer.interface.writeAll("\n\n");
+    try writer.writeAll("\n\n");
 
     // RGB foreground colors
-    try writer.interface.writeAll("RGB colors: ");
+    try writer.writeAll("RGB colors: ");
 
     try style.setForegroundColor(.{
         .Rgb = .{ .r = 255, .g = 128, .b = 0 },
     });
 
-    try writer.interface.writeAll("Orange ");
+    try writer.writeAll("Orange ");
 
     try style.setForegroundColor(.{
         .Rgb = .{ .r = 180, .g = 80, .b = 255 },
     });
-    try writer.interface.writeAll("Purple");
+    try writer.writeAll("Purple");
     try style.setForegroundColor(.Reset);
-    try writer.interface.writeAll("\n\n");
+    try writer.writeAll("\n\n");
 
     // Text attributes
-    try writer.interface.writeAll("Attributes:\n");
+    try writer.writeAll("Attributes:\n");
 
     try style.setAttribute(.Bold);
-    try writer.interface.writeAll("Bold\n");
+    try writer.writeAll("Bold\n");
     try style.setAttribute(.NormalIntensity);
 
     try style.setAttribute(.Dim);
-    try writer.interface.writeAll("Dim\n");
+    try writer.writeAll("Dim\n");
     try style.setAttribute(.NormalIntensity);
 
     try style.setAttribute(.Italic);
-    try writer.interface.writeAll("Italic\n");
+    try writer.writeAll("Italic\n");
     try style.setAttribute(.NoItalic);
 
     try style.setAttribute(.Underlined);
-    try writer.interface.writeAll("Underlined\n");
+    try writer.writeAll("Underlined\n");
     try style.setAttribute(.NoUnderline);
 
     try style.setAttribute(.Reverse);
-    try writer.interface.writeAll("Reverse\n");
+    try writer.writeAll("Reverse\n");
     try style.setAttribute(.NoReverse);
 
     try style.setAttribute(.CrossedOut);
-    try writer.interface.writeAll("Crossed out\n");
+    try writer.writeAll("Crossed out\n");
     try style.setAttribute(.NotCrossedOut);
 
-    try writer.interface.writeAll("\n");
+    try writer.writeAll("\n");
 
     // Underline color
-    try writer.interface.writeAll("Underline color: ");
+    try writer.writeAll("Underline color: ");
     try style.setUnderlineColor(.{
         .Rgb = .{ .r = 255, .g = 80, .b = 120 },
     });
     try style.setAttribute(.Underlined);
-    try writer.interface.writeAll("Pink underline\n");
+    try writer.writeAll("Pink underline\n");
     try style.setAttribute(.NoUnderline);
     try style.setUnderlineColor(.Reset);
 

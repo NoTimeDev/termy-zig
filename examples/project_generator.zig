@@ -11,40 +11,27 @@ pub fn main(init: std.process.Init) !void {
     const stdin = try termy.sysIn(init.io);
     const stdout = try termy.sysOut(init.io);
 
-    var output_state: termy.OutputState = .init(stdout);
-    var input_state: termy.InputState = .init(stdin);
-
     var buffer: [1024]u8 = undefined;
-    var writer: std.Io.File.Writer = .init(stdout, init.io, &buffer);
-    var terminal: termy.Terminal = .init(
-        &output_state,
-        &input_state,
-        &writer,
-        stdin.handle,
-    );
-
-    var input: termy.Input = .init(
-        &input_state,
-        init.io,
-        stdin,
-    );
-
-
-    var cursor: termy.Cusor = .init(&output_state, &writer);
-    var style: termy.Style = .init(&output_state, &writer);
+    var tty: termy.Tty = .init(init.io, stdout, &buffer, stdin);
+    var terminal: termy.Terminal = .init(&tty);
+    var input: termy.Input = .init(&tty);
+    var cursor: termy.Cusor = .init(&tty);
+    var style: termy.Style = .init(&tty);
+    var writer = tty.writer();
 
     defer writer.flush() catch {};
 
     try terminal.enableEnhancements(termy.Terminal.Enhancements.REPORT_ALL_KEYS_AS_ESCAPE_CODES | termy.Terminal.Enhancements.REPORT_EVENT_TYPES | termy.Terminal.Enhancements.REPORT_ALTERNATE_KEYS | termy.Terminal.Enhancements.DISAMBIGUATE_ESCAPE_CODES);
     defer terminal.disableEnhancements() catch {};
-    const cpi = try termy.enableCp();
-    defer termy.restoreCp(cpi) catch {};
+
+    try terminal.enableCp();
+    defer terminal.restoreCp() catch {};
 
     try terminal.enableRawMode();
     defer terminal.disableRawMode() catch {};
 
-    try writer.interface.writeAll("Termy Project Generator\n");
-    try writer.interface.writeAll("Esc to exit\n");
+    try writer.writeAll("Termy Project Generator\n");
+    try writer.writeAll("Esc to exit\n");
     try writer.flush();
 
     var fields = [_]Field{
@@ -92,18 +79,18 @@ pub fn main(init: std.process.Init) !void {
                             try cursor.moveToColumn(0);
                             try terminal.clear(.CurrentRow);
 
-                            try writer.interface.print(
+                            try writer.print(
                                 "{s}: ",
                                 .{current.prompt},
                             );
-                            try writer.interface.writeAll(current.value.items);
+                            try writer.writeAll(current.value.items);
 
                             if (current_field + 1 == fields.len) {
                                 break;
                             }
 
                             current_field += 1;
-                            try writer.interface.writeAll("\n");
+                            try writer.writeAll("\n");
                         },
 
                         .Char => |ch| {
@@ -127,30 +114,30 @@ pub fn main(init: std.process.Init) !void {
         try cursor.moveToColumn(0);
         try terminal.clear(.CurrentRow);
 
-        try writer.interface.print("{s}: ", .{current.prompt});
+        try writer.print("{s}: ", .{current.prompt});
 
         if (current.value.items.len == 0) {
             try style.setForegroundColor(.BrightBlack);
-            try writer.interface.writeAll(current.placeholder);
+            try writer.writeAll(current.placeholder);
             try style.setForegroundColor(.Reset);
 
             try cursor.moveToColumn(
                 @intCast(current.prompt.len + 3),
             );
         } else {
-            try writer.interface.writeAll(current.value.items);
+            try writer.writeAll(current.value.items);
         }
 
         try writer.flush();
     }
 
     if (cancelled) {
-        try writer.interface.writeAll("\nUser Cancelled!\n");
+        try writer.writeAll("\nUser Cancelled!\n");
     } else {
-        try writer.interface.writeAll("\n\nProject settings:\n");
+        try writer.writeAll("\n\nProject settings:\n");
 
         for (fields) |field| {
-            try writer.interface.print(
+            try writer.print(
                 "    {s}: {s}\n",
                 .{ field.prompt, field.value.items },
             );

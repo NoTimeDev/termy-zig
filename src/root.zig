@@ -10,8 +10,6 @@ pub const event = @import("event.zig");
 pub const OutputState = @import("state.zig").OutputState;
 pub const InputState = @import("state.zig").InputState;
 
-///TODO: @compileError("NORMALIZE INPUT: NO MATTER THE SYSTEM OR FLAGS THE INPUT YOU RECIVE SHOULD BE SOMEWHAT SIMILAR(EG shift + char)");
-
 /// Returns the terminal output file, On windows this is "CONOUT$", on unix systems this is "/dev/tty".
 ///
 /// For TUI applications, prefer this function over standard output.
@@ -22,44 +20,41 @@ pub inline fn sysOut(io: std.Io) !std.Io.File{
     return if(builtin.os.tag == .windows)
         @import("sys/windows/root.zig").sysOut()
     else 
-        @import("sys/unix.zig").sysOut(io);
+        @import("sys/unix.zig").tty(io);
 }
 
 /// Returns the terminal input file, On windows this is "CONIN$", on unix systems this is "/dev/tty".
-///
-/// When using input on windows, you MUST use sysIN or you will not get events 
 pub inline fn sysIn(io: std.Io) !std.Io.File{
     return if(builtin.os.tag == .windows)
         @import("sys/windows/root.zig").sysIn()
     else 
-        @import("sys/unix.zig").sysOut(io);
+        @import("sys/unix.zig").tty(io);
 }
 
-pub const CodePageInfo = if(builtin.os.tag == .windows)
-    struct{i: std.os.windows.UINT, o: std.os.windows.UINT} 
-else 
-    struct{};
-/// This function sets CodePage to UTF-8, this function does nothing on unix systems 
-pub fn enableCp() !CodePageInfo{
-    if(builtin.os.tag == .windows){
-        const win = @import("sys/windows/root.zig");
-        const out = win.winapi.GetConsoleOutputCP();
-        const in = win.winapi.GetConsoleCP();
-        if(out == 0 or in == 0) return error.FailedToEnableCp;
-        
-        if(win.winapi.SetConsoleCP(65001) == .FALSE) return error.FailedToEnableCp;
-        if(win.winapi.SetConsoleOutputCP(65001) == .FALSE) return error.FailedToEnableCp;
-        return .{.o = out, .i = in};
-    }else{
-        return .{};
-    }
-}
+pub const Tty = struct {
+    io: std.Io,
+    output_state: OutputState,
+    input_state: InputState,
 
-/// This restore the original CodePage
-pub fn restoreCp(cp: CodePageInfo) !void{
-    if(builtin.os.tag == .windows){
-        const win = @import("sys/windows/root.zig");
-        if(win.winapi.SetConsoleCP(cp.i) == .FALSE) return error.FailedToEnableCp;
-        if(win.winapi.SetConsoleOutputCP(cp.o) == .FALSE) return error.FailedToEnableCp;
+    out_writer: std.Io.File.Writer,
+    in_file: std.Io.File,
+
+    /// Creates a new Tty.
+    ///
+    /// Input is optional, but Output is required for all operations.
+    /// If `in` is null, attempting to use `Input` will cause undefined behaviour. 
+    pub fn init(io: std.Io, out: std.Io.File, buffer: []u8, in: ?std.Io.File) Tty{
+        return .{
+            .io = io,
+            .output_state = .init(out),
+            .input_state = if(in)|n| .init(n) else undefined,
+            .out_writer = .init(out, io, buffer),
+            .in_file = if(in)|n| n else undefined
+        };
     }
-}
+
+    /// Returns a pointer to the output file's `std.Io.Writer` interface.
+    pub fn writer(self: *Tty) *std.Io.Writer{
+        return &self.out_writer.interface;
+    }
+};

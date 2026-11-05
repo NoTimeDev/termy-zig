@@ -5,13 +5,12 @@ const termy = @import("termy");
 pub fn main(init: std.process.Init) !void{
     const stdin = std.Io.File.stdin();
     const stdout = std.Io.File.stdout();
-
-    var outstate: termy.OutputState = .init(stdout);
-    var instate: termy.InputState = .init(stdin);
     var buffer: [1024]u8 = undefined;
-    var writer: std.Io.File.Writer = .init(stdout, init.io, &buffer);
 
-    var terminal: termy.Terminal = .init(&outstate, &instate, &writer, stdin.handle);
+    var tty: termy.Tty = .init(init.io, stdout, &buffer, stdin);
+    var terminal: termy.Terminal = .init(&tty);
+    var input: termy.Input = .init(&tty);
+    var writer = tty.writer();
     var x: std.ArrayList(termy.event.Event) = .empty;
     
     defer {
@@ -24,8 +23,8 @@ pub fn main(init: std.process.Init) !void{
     }
 
     defer writer.flush() catch {};
-    const cpi = try termy.enableCp();
-    defer termy.restoreCp(cpi) catch {};
+    try terminal.enableCp();
+    defer terminal.restoreCp() catch {};
 
     const En = termy.Terminal.Enhancements;
     try terminal.enableEnhancements(En.DISAMBIGUATE_ESCAPE_CODES | En.REPORT_EVENT_TYPES | En.REPORT_ALL_KEYS_AS_ESCAPE_CODES);
@@ -40,7 +39,6 @@ pub fn main(init: std.process.Init) !void{
     try terminal.enableRawMode();
     defer terminal.disableRawMode() catch {};
     try writer.flush();
-    var input: termy.Input = .init(&instate, init.io, stdin);
 
 
     while (true) {

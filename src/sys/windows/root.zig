@@ -3,23 +3,30 @@ pub const winapi = @import("api.zig");
 pub const windows = std.os.windows;
 pub const options = @import("options");
 const event = @import("../../event.zig");
+const Lazy = @import("../../utils.zig").Lazy;
 
 pub const WinSupportedFeatures = packed struct(u8){
     VtOut: bool = false,
     _: u7 = 0
 };
 
-pub fn Lazy(comptime T: type, comptime init_fn: fn () T) type{
-    return struct {
-        val: ?T = null,
-        pub fn get(self: *@This()) T{
-            if(self.val)|v| return v;
-            const v = init_fn();
-            self.val = v;
-            return v;
-        }
-    };
-}
+var conIn: Lazy(std.Io.File, struct{
+    pub fn init() std.Io.File{
+        const handle = winapi.CreateFileW(
+            std.unicode.utf8ToUtf16LeStringLiteral("CONIN$"), 
+            winapi.GENERIC_READ | winapi.GENERIC_WRITE,
+            winapi.FILE_SHARE_READ,
+            null, 
+            winapi.OPEN_EXISTING, 
+            0, 
+            null
+        );
+        return .{
+            .handle = handle,
+            .flags = .{ .nonblocking = false }
+        };
+    }
+}) = .{};
 
 var conOut: Lazy(std.Io.File, struct{ 
     pub fn init() std.Io.File{
@@ -76,31 +83,18 @@ pub fn enableOutVT(handle: windows.HANDLE) void{
 }
 
 pub inline fn sysOut() !std.Io.File{
-    const o  = conOut.get();
+    const o  = conOut.get(.{});
     if(o.handle == windows.INVALID_HANDLE_VALUE) return error.FailedToOpenTty;
     return o;
 }
 
 pub inline fn sysIn() !std.Io.File{
-    const handle = winapi.CreateFileW(
-        std.unicode.utf8ToUtf16LeStringLiteral("CONIN$"), 
-        winapi.GENERIC_READ | winapi.GENERIC_WRITE,
-        winapi.FILE_SHARE_READ,
-        null, 
-        winapi.OPEN_EXISTING, 
-        0, 
-        null
-    );
-    if(handle == windows.INVALID_HANDLE_VALUE){
-        return error.FailedToOpenTty;
-    }
-    return .{
-        .handle = handle,
-        .flags = .{ .nonblocking = false }
-    };
+    const o = conIn.get(.{});
+    if(o.handle == windows.INVALID_HANDLE_VALUE) return error.FailedToOpenTty;
+    return o;
 }
 
-pub fn translateMouse(last_mouse_event: winapi.MOUSE_EVENT_RECORD, record: winapi.MOUSE_EVENT_RECORD) event.MouseEvent{
+pub fn translateMouse(outhandle: windows.HANDLE, last_mouse_event: winapi.MOUSE_EVENT_RECORD, record: winapi.MOUSE_EVENT_RECORD) event.MouseEvent{
     const delta: i16 = @bitCast(@as(u16, @truncate(record.dwButtonState >> 16)));
     const kind: event.MouseEventKind = switch (record.dwEventFlags) {
         winapi.PRESSED_OR_RELEASED, winapi.DOUBLE_CLICK => if(
@@ -159,7 +153,7 @@ pub fn translateMouse(last_mouse_event: winapi.MOUSE_EVENT_RECORD, record: winap
     };
 
     var info: winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
-    const y = if(winapi.GetConsoleScreenBufferInfo(conOut.get().handle, &info) == .FALSE)
+    const y = if(winapi.GetConsoleScreenBufferInfo(outhandle, &info) == .FALSE)
         0 
     else 
         @as(u16, @intCast(record.dwMousePosition.Y))-|info.srWindow.Top;

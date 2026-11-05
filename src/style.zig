@@ -2,11 +2,11 @@ const builtin = @import("builtin");
 const std = @import("std");
 const OutputState = @import("state.zig").OutputState;
 const options = @import("options");
+const Tty = @import("root.zig").Tty;
 
 /// This structure contains functions, which can be used to manipulate how the terminal looks 
 pub const Style = struct{
-    outputstate: *OutputState,
-    writer: *std.Io.File.Writer,
+    tty: *Tty, 
 
     /// Represents a color
     ///
@@ -139,10 +139,9 @@ pub const Style = struct{
 
 
     /// Inits a `Style` structure
-    pub inline fn init(outputstate: *OutputState, writer: *std.Io.File.Writer) Style{
+    pub inline fn init(tty: *Tty) Style{
         return .{
-            .outputstate = outputstate,
-            .writer = writer
+            .tty = tty
         };
     }
 
@@ -150,26 +149,26 @@ pub const Style = struct{
     pub fn setForegroundColor(self: *Style, color: Color) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.outputstate.supported.VtOut){
-                self.writer.flush() catch return error.FailedToSetForegroundColor;
+            if(options.out == .native or !self.tty.output_state.supported.VtOut){
+                self.tty.out_writer.flush() catch return error.FailedToSetForegroundColor;
                 if(color == .AnsiValue or color == .Rgb) return;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
-                if(win.winapi.GetConsoleScreenBufferInfo(self.writer.file.handle, &info) == .FALSE)
+                if(win.winapi.GetConsoleScreenBufferInfo(self.tty.out_writer.file.handle, &info) == .FALSE)
                     return error.FailedToSetForegroundColor;
-                if(self.outputstate.original_console_state == null){
-                    self.outputstate.original_console_state = info;
+                if(self.tty.output_state.original_console_state == null){
+                    self.tty.output_state.original_console_state = info;
                 }
                 
                 if(color == .Reset){
-                    if(win.winapi.SetConsoleTextAttribute(self.writer.file.handle, 
+                    if(win.winapi.SetConsoleTextAttribute(self.tty.out_writer.file.handle, 
                             (info.wAttributes & ~win.winapi.FG_MASK) | 
-                            (self.outputstate.original_console_state.?.wAttributes & win.winapi.FG_MASK)
+                            (self.tty.output_state.original_console_state.?.wAttributes & win.winapi.FG_MASK)
                     ) == .FALSE)
                         return error.FailedToSetForegroundColor;
                     return;
                 }
-                if(win.winapi.SetConsoleTextAttribute(self.writer.file.handle, 
+                if(win.winapi.SetConsoleTextAttribute(self.tty.out_writer.file.handle, 
                         (info.wAttributes & ~win.winapi.FG_MASK) | getwindowscode(color) 
                 ) == .FALSE)
                     return error.FailedToSetForegroundColor;
@@ -178,10 +177,10 @@ pub const Style = struct{
         }
 
         switch(color){
-            .Rgb => |rgb| self.writer.interface.print("\x1b[38;2;{};{};{}m", .{rgb.r, rgb.g, rgb.b}) catch return error.FailedToSetForegroundColor,
-            .AnsiValue => |ansi| self.writer.interface.print("\x1b[38;5;{}m", .{ansi}) catch return error.FailedToSetForegroundColor,
+            .Rgb => |rgb| self.tty.out_writer.interface.print("\x1b[38;2;{};{};{}m", .{rgb.r, rgb.g, rgb.b}) catch return error.FailedToSetForegroundColor,
+            .AnsiValue => |ansi| self.tty.out_writer.interface.print("\x1b[38;5;{}m", .{ansi}) catch return error.FailedToSetForegroundColor,
             else => { 
-                self.writer.interface.print("\x1b[{}m", .{getcode(color)}) catch return error.FailedToSetForegroundColor;
+                self.tty.out_writer.interface.print("\x1b[{}m", .{getcode(color)}) catch return error.FailedToSetForegroundColor;
             }
         }
     }
@@ -190,26 +189,26 @@ pub const Style = struct{
     pub fn setBackgroundColor(self: *Style, color: Color) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.outputstate.supported.VtOut){
-                self.writer.flush() catch return error.FailedToSetBackgroundColor;
+            if(options.out == .native or !self.tty.output_state.supported.VtOut){
+                self.tty.out_writer.flush() catch return error.FailedToSetBackgroundColor;
                 if(color == .AnsiValue or color == .Rgb) return;
                 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
-                if(win.winapi.GetConsoleScreenBufferInfo(self.writer.file.handle, &info) == .FALSE)
+                if(win.winapi.GetConsoleScreenBufferInfo(self.tty.out_writer.file.handle, &info) == .FALSE)
                     return error.FailedToSetBackgroundColor;
-                if(self.outputstate.original_console_state == null){
-                    self.outputstate.original_console_state = info;
+                if(self.tty.output_state.original_console_state == null){
+                    self.tty.output_state.original_console_state = info;
                 }
                 
                 if(color == .Reset){
-                    if(win.winapi.SetConsoleTextAttribute(self.writer.file.handle, 
+                    if(win.winapi.SetConsoleTextAttribute(self.tty.out_writer.file.handle, 
                             (info.wAttributes & ~win.winapi.BG_MASK) | 
-                            (self.outputstate.original_console_state.?.wAttributes & win.winapi.BG_MASK)
+                            (self.tty.output_state.original_console_state.?.wAttributes & win.winapi.BG_MASK)
                     ) == .FALSE)
                         return error.FailedToSetBackgroundColor;
                     return;
                 }
-                if(win.winapi.SetConsoleTextAttribute(self.writer.file.handle, 
+                if(win.winapi.SetConsoleTextAttribute(self.tty.out_writer.file.handle, 
                         (info.wAttributes & ~win.winapi.BG_MASK) | (getwindowscode(color) & win.winapi.FG_MASK) << 4
                 ) == .FALSE)
                     return error.FailedToSetBackgroundColor;
@@ -218,10 +217,10 @@ pub const Style = struct{
         }
 
         switch(color){
-            .Rgb => |rgb| self.writer.interface.print("\x1b[48;2;{};{};{}m", .{rgb.r, rgb.g, rgb.b}) catch return error.FailedToSetBackgroundColor,
-            .AnsiValue => |ansi| self.writer.interface.print("\x1b[48;5;{}m", .{ansi}) catch return error.FailedToSetBackgroundColor,
+            .Rgb => |rgb| self.tty.out_writer.interface.print("\x1b[48;2;{};{};{}m", .{rgb.r, rgb.g, rgb.b}) catch return error.FailedToSetBackgroundColor,
+            .AnsiValue => |ansi| self.tty.out_writer.interface.print("\x1b[48;5;{}m", .{ansi}) catch return error.FailedToSetBackgroundColor,
             else => { 
-                self.writer.interface.print("\x1b[{}m", .{getcode(color)+10}) catch return error.FailedToSetBackgroundColor;
+                self.tty.out_writer.interface.print("\x1b[{}m", .{getcode(color)+10}) catch return error.FailedToSetBackgroundColor;
             }
         }
     }
@@ -232,14 +231,14 @@ pub const Style = struct{
     /// Non-VT terminals will do nothing
     pub fn setUnderlineColor(self: *Style, color: Color) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
-            if(options.out == .native or !self.outputstate.supported.VtOut){
+            if(options.out == .native or !self.tty.output_state.supported.VtOut){
                 return;
             }
         }
         switch(color){
-            .Reset => self.writer.interface.writeAll("\x1b[59m") catch return error.FailedToSetUnderlineColor,
-            .Rgb => |rgb| self.writer.interface.print("\x1b[58:2::{}:{}:{}m", .{rgb.r, rgb.g, rgb.b}) catch return error.FailedToSetUnderlineColor,
-            .AnsiValue => |ansi| self.writer.interface.print("\x1b[58:5:{}m", .{ansi}) catch return error.FailedToSetUnderlineColor,
+            .Reset => self.tty.out_writer.interface.writeAll("\x1b[59m") catch return error.FailedToSetUnderlineColor,
+            .Rgb => |rgb| self.tty.out_writer.interface.print("\x1b[58:2::{}:{}:{}m", .{rgb.r, rgb.g, rgb.b}) catch return error.FailedToSetUnderlineColor,
+            .AnsiValue => |ansi| self.tty.out_writer.interface.print("\x1b[58:5:{}m", .{ansi}) catch return error.FailedToSetUnderlineColor,
             else => {
                 const v: u8 = switch (color) {   
                     .Black => 0,
@@ -268,7 +267,7 @@ pub const Style = struct{
 
                     else => unreachable,
                 };
-                self.writer.interface.print("\x1b[58;5;{}m", .{v}) catch return error.FailedToSetUnderlineColor;
+                self.tty.out_writer.interface.print("\x1b[58;5;{}m", .{v}) catch return error.FailedToSetUnderlineColor;
             }
         }
     }
@@ -277,18 +276,18 @@ pub const Style = struct{
     pub fn setAttribute(self: *Style, attribute: Attribute) !void{
         if(builtin.os.tag == .windows and options.out != .vt){
             const win = @import("sys/windows/root.zig");
-            if(options.out == .native or !self.outputstate.supported.VtOut){
-                self.writer.flush() catch return error.FailedToSetAttribute;
+            if(options.out == .native or !self.tty.output_state.supported.VtOut){
+                self.tty.out_writer.flush() catch return error.FailedToSetAttribute;
                 switch (attribute) {
                     .Bold, .NormalIntensity, .Underlined, .NoUnderline, .Dim, .Reverse, .NoReverse => {},
                     else => return
                 } // Why? Well I dont want to make useless syscalls! 
 
                 var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
-                if(win.winapi.GetConsoleScreenBufferInfo(self.writer.file.handle, &info) == .FALSE)
+                if(win.winapi.GetConsoleScreenBufferInfo(self.tty.out_writer.file.handle, &info) == .FALSE)
                     return error.FailedToSetBackgroundColor;
-                if(self.outputstate.original_console_state == null){
-                    self.outputstate.original_console_state = info;
+                if(self.tty.output_state.original_console_state == null){
+                    self.tty.output_state.original_console_state = info;
                 }
                
                 var attr: u16 = info.wAttributes;
@@ -299,8 +298,8 @@ pub const Style = struct{
                     .NoUnderline => attr&=~win.winapi.COMMON_LVB_UNDERSCORE,
                     // There are flags for reverse, BUTTTT similar to underscore its unreliable sooo emulate!
                     .Reverse => {
-                        if(self.outputstate.reversed) return;
-                        self.outputstate.reversed = true;
+                        if(self.tty.output_state.reversed) return;
+                        self.tty.output_state.reversed = true;
                         const fg = attr & win.winapi.FG_MASK;
                         const bg = attr & win.winapi.BG_MASK;
                         attr =
@@ -309,8 +308,8 @@ pub const Style = struct{
                             (bg >> 4);
                     },
                     .NoReverse => {
-                        if(!self.outputstate.reversed) return;
-                        self.outputstate.reversed = false;
+                        if(!self.tty.output_state.reversed) return;
+                        self.tty.output_state.reversed = false;
                         const fg = attr & win.winapi.FG_MASK;
                         const bg = attr & win.winapi.BG_MASK;
                         attr =
@@ -320,36 +319,36 @@ pub const Style = struct{
                     },
                     .NormalIntensity => {
                         attr = (attr & ~win.winapi.FOREGROUND_INTENSITY) |
-                            (self.outputstate.original_console_state.?.wAttributes & win.winapi.FOREGROUND_INTENSITY);
+                            (self.tty.output_state.original_console_state.?.wAttributes & win.winapi.FOREGROUND_INTENSITY);
                     },
                     else => {}
                 }
-                if(win.winapi.SetConsoleTextAttribute(self.writer.file.handle, attr) == .FALSE)
+                if(win.winapi.SetConsoleTextAttribute(self.tty.out_writer.file.handle, attr) == .FALSE)
                     return error.FailedToSetBackgroundColor;
                 return;
             }
         }
         switch (attribute) {
-            .Bold => self.writer.interface.writeAll("\x1b[1m") catch return error.FailedToSetAttribute,
-            .Dim => self.writer.interface.writeAll("\x1b[2m") catch return error.FailedToSetAttribute,
-            .Italic => self.writer.interface.writeAll("\x1b[3m") catch return error.FailedToSetAttribute,
-            .Underlined => self.writer.interface.writeAll("\x1b[4m") catch return error.FailedToSetAttribute,
+            .Bold => self.tty.out_writer.interface.writeAll("\x1b[1m") catch return error.FailedToSetAttribute,
+            .Dim => self.tty.out_writer.interface.writeAll("\x1b[2m") catch return error.FailedToSetAttribute,
+            .Italic => self.tty.out_writer.interface.writeAll("\x1b[3m") catch return error.FailedToSetAttribute,
+            .Underlined => self.tty.out_writer.interface.writeAll("\x1b[4m") catch return error.FailedToSetAttribute,
 
-            .DoubleUnderlined => self.writer.interface.writeAll("\x1b[4:2m") catch return error.FailedToSetAttribute,
-            .Undercurled => self.writer.interface.writeAll("\x1b[4:3m") catch return error.FailedToSetAttribute,
-            .Underdotted => self.writer.interface.writeAll("\x1b[4:4m") catch return error.FailedToSetAttribute,
-            .Underdashed => self.writer.interface.writeAll("\x1b[4:5m") catch return error.FailedToSetAttribute,
-            .SlowBlink => self.writer.interface.writeAll("\x1b[5m") catch return error.FailedToSetAttribute,
-            .RapidBlink => self.writer.interface.writeAll("\x1b[6m") catch return error.FailedToSetAttribute,
-            .Reverse => self.writer.interface.writeAll("\x1b[7m") catch return error.FailedToSetAttribute,
-            .CrossedOut => self.writer.interface.writeAll("\x1b[9m") catch return error.FailedToSetAttribute,
+            .DoubleUnderlined => self.tty.out_writer.interface.writeAll("\x1b[4:2m") catch return error.FailedToSetAttribute,
+            .Undercurled => self.tty.out_writer.interface.writeAll("\x1b[4:3m") catch return error.FailedToSetAttribute,
+            .Underdotted => self.tty.out_writer.interface.writeAll("\x1b[4:4m") catch return error.FailedToSetAttribute,
+            .Underdashed => self.tty.out_writer.interface.writeAll("\x1b[4:5m") catch return error.FailedToSetAttribute,
+            .SlowBlink => self.tty.out_writer.interface.writeAll("\x1b[5m") catch return error.FailedToSetAttribute,
+            .RapidBlink => self.tty.out_writer.interface.writeAll("\x1b[6m") catch return error.FailedToSetAttribute,
+            .Reverse => self.tty.out_writer.interface.writeAll("\x1b[7m") catch return error.FailedToSetAttribute,
+            .CrossedOut => self.tty.out_writer.interface.writeAll("\x1b[9m") catch return error.FailedToSetAttribute,
             
-            .NormalIntensity => self.writer.interface.writeAll("\x1b[22m") catch return error.FailedToSetAttribute,
-            .NoItalic => self.writer.interface.writeAll("\x1b[23m") catch return error.FailedToSetAttribute,
-            .NoUnderline => self.writer.interface.writeAll("\x1b[24m") catch return error.FailedToSetAttribute,
-            .NoBlink => self.writer.interface.writeAll("\x1b[25m") catch return error.FailedToSetAttribute,
-            .NoReverse => self.writer.interface.writeAll("\x1b[27m") catch return error.FailedToSetAttribute,
-            .NotCrossedOut => self.writer.interface.writeAll("\x1b[29m") catch return error.FailedToSetAttribute,
+            .NormalIntensity => self.tty.out_writer.interface.writeAll("\x1b[22m") catch return error.FailedToSetAttribute,
+            .NoItalic => self.tty.out_writer.interface.writeAll("\x1b[23m") catch return error.FailedToSetAttribute,
+            .NoUnderline => self.tty.out_writer.interface.writeAll("\x1b[24m") catch return error.FailedToSetAttribute,
+            .NoBlink => self.tty.out_writer.interface.writeAll("\x1b[25m") catch return error.FailedToSetAttribute,
+            .NoReverse => self.tty.out_writer.interface.writeAll("\x1b[27m") catch return error.FailedToSetAttribute,
+            .NotCrossedOut => self.tty.out_writer.interface.writeAll("\x1b[29m") catch return error.FailedToSetAttribute,
         }
     }
 };

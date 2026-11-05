@@ -3,24 +3,18 @@ const builtin = @import("builtin");
 const InputState = @import("state.zig").InputState;
 const event = @import("event.zig");
 const parser = @import("parser.zig");
+const Ring = @import("utils.zig").Ring;
+const Tty = @import("root.zig").Tty;
 
 pub const Input = struct {
-    inputstate: *InputState,
-    io: std.Io,
-    file: std.Io.File,
+    tty: *Tty,
     buffer: [64]u8 = undefined,
     start: usize = 0,
     len: usize = 0,
 
-    pub fn init(inputstate: *InputState, io: std.Io, file: std.Io.File) Input{
-//         if(builtin.os.tag == .windows){
-//             const win = @import("sys/windows/root.zig");
-//             _ = win.winapi.FlushConsoleInputBuffer(file.handle);
-//         }
+    pub fn init(tty: *Tty) Input{
         return .{
-            .io = io,
-            .inputstate = inputstate,
-            .file = file,
+            .tty = tty
         };
     }
 
@@ -29,14 +23,14 @@ pub const Input = struct {
     pub fn poll(self: *Input, timeout: std.Io.Duration) !bool{
         if(builtin.os.tag == .windows){
             const win = @import("sys/windows/root.zig");
-            return switch (win.winapi.WaitForSingleObject(self.file.handle, @intCast(timeout.toMilliseconds()))) {
+            return switch (win.winapi.WaitForSingleObject(self.tty.in_file.handle, @intCast(timeout.toMilliseconds()))) {
                 win.winapi.WAIT_FAILED => error.PollFailed,
                 win.winapi.WAIT_OBJECT_0 => true, 
                 else => false
             };
         }else{
             var fds = [_]std.posix.pollfd{.{
-                .fd = self.file.handle,
+                .fd = self.tty.in_file.handle,
                 .events = std.posix.POLL.IN,
                 .revents = 0,
             }};
@@ -56,7 +50,7 @@ pub const Input = struct {
             const win = @import("sys/windows/root.zig");
             var record: win.winapi.INPUT_RECORD = undefined;
             var n: win.windows.DWORD = 0;
-            if(win.winapi.ReadConsoleInputW(self.file.handle, &record, 1, &n) == .FALSE) return error.FailedToReadEvent;
+            if(win.winapi.ReadConsoleInputW(self.tty.in_file.handle, &record, 1, &n) == .FALSE) return error.FailedToReadEvent;
 
             switch (record.EventType) {
                 win.winapi.KEY_EVENT => {
@@ -70,8 +64,8 @@ pub const Input = struct {
                     }
                 },
                 win.winapi.MOUSE_EVENT => {
-                    const e: event.Event = .{ .mouse = win.translateMouse(self.inputstate.mouse_event, record.Event.MouseEvent) };
-                    self.inputstate.mouse_event = record.Event.MouseEvent;
+                    const e: event.Event = .{ .mouse = win.translateMouse(self.tty.out_writer.file.handle, self.tty.input_state.mouse_event, record.Event.MouseEvent) };
+                    self.tty.input_state.mouse_event = record.Event.MouseEvent;
                     return e;
                 },
                 win.winapi.WINDOW_BUFFER_SIZE_EVENT => {
@@ -82,14 +76,14 @@ pub const Input = struct {
         }else{
             _ = self.poll(.fromMilliseconds(-1)) catch return error.FailedToReadEvent;
             if(self.len == 0){
-                self.len = self.file.readStreaming(self.io, &.{&self.buffer}) catch return error.FailedToReadEvent;
+                self.len = self.tty.in_file.readStreaming(self.tty.io, &.{&self.buffer}) catch return error.FailedToReadEvent;
                 self.start = 0;
             }
             var p: parser.Parser = .{};
             while (true) {
                 if (self.start >= self.len) {
                     _ = self.poll(.fromMilliseconds(-1)) catch return error.FailedToReadEvent;
-                    self.len = self.file.readStreaming(self.io, &.{&self.buffer}) catch return error.FailedToReadEvent;
+                    self.len = self.tty.in_file.readStreaming(self.tty.io, &.{&self.buffer}) catch return error.FailedToReadEvent;
                     self.start = 0;
                 }
 
