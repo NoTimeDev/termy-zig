@@ -1,7 +1,6 @@
 const event = @import("event.zig");
 const std = @import("std");
 
-
 pub const InternalEvent = union(enum){
     event: event.Event,
     incomplete,
@@ -14,8 +13,7 @@ pub const Parser = struct {
         escape,
         csi,
         ss3,
-        mouse,
-        utf8
+        utf8,
     };
 
     const Substate = enum {
@@ -41,6 +39,8 @@ pub const Parser = struct {
     state: State = .ground,
     substate: Substate = .none,
 
+    use_srg: bool = false,
+
     pub fn step(self: *Parser, b: u8) InternalEvent{
         return switch (self.state) {
             .ground => self.parseground(b),
@@ -48,10 +48,10 @@ pub const Parser = struct {
             .escape => self.parseescape(b),
             .utf8 => self.parseutf8(b),
             .ss3 => self.parsess3(b),
-            else => unreachable
         };
     }
 
+  
     fn parseutf8(self: *Parser, b: u8) InternalEvent{
         if(self.utf8_need == 0){
             self.utf8_need = std.unicode.utf8ByteSequenceLength(b) catch return .invalid;
@@ -100,7 +100,11 @@ pub const Parser = struct {
                 self.pushParam();
                 return .incomplete;
             },
-            0x40...0x4c, 0x4e...0x7e => {
+            '<' => {
+                self.use_srg = true;
+                return .incomplete;
+            },
+            0x40...0x4c, 0x4D...0x7e => {
                 return self.finishCsi(b);
             },
             else => {
@@ -237,10 +241,119 @@ pub const Parser = struct {
                 };
                 return .{ .event = .{ .key = key } };
             },
+            'M', 'm' =>
+                return if(self.use_srg)
+                    self.parse_srg_mouse(b)
+                else
+                    self.parse_rxvt_mouse(),
             else => {
                 return .invalid;
             }
         }
+    }
+
+    fn parse_srg_mouse(self: *Parser, b: u8) InternalEvent{
+        const cb = self.params[0].value;
+        var kind: event.MouseEventKind = undefined;
+
+        if((cb & 32) != 0 and (cb & 0b11) == 3){
+            kind = .Moved;
+        }else if((cb & 64) != 0){
+            kind = switch (cb & 0b11) {
+                0 => .ScrollUp,
+                1 => .ScrollDown,
+                2 => .ScrollRight,
+                3 => .ScrollLeft,
+                else => return .invalid,
+            };
+        }else{
+            const mousebutton: event.MouseButton = switch (cb & 0b11) {
+                0 => .Left,
+                1 => .Middle,
+                2 => .Right,
+                else => .Unknown
+            };
+            if((cb & 32) != 0){
+                kind = .{ .Drag = mousebutton };
+            }else if(b == 'M'){
+                kind = .{ .Down = mousebutton };
+            }else{
+                kind = .{ .Up = mousebutton };
+            }
+        }
+        return .{ 
+            .event = .{ 
+                .mouse = .{
+                    .modifier = .{
+                        .Shift = (cb & 4) != 0,
+                        .Alt = (cb & 8) != 0,
+                        .Control = (cb & 16) != 0,
+                    },
+                    .column = self.params[1].value,
+                    .row = self.params[2].value,
+                    .kind = kind,
+                }
+            }
+        };
+    }
+
+    fn parse_rxvt_mouse(self: *Parser) InternalEvent{
+        const cb = self.params[0].value - 32;
+        var kind: event.MouseEventKind = undefined;
+
+        if ((cb & 64) != 0) {
+            kind = switch (cb & 0b11) {
+                0 => .ScrollUp,
+                1 => .ScrollDown,
+                2 => .ScrollLeft,
+                3 => .ScrollRight,
+                else => return .invalid,
+            };
+        } else if ((cb & 32) != 0) {
+            const button = cb & 0b11;
+
+            if (button == 3) {
+                kind = .Moved;
+            } else {
+                const mousebutton: event.MouseButton = switch (button) {
+                    0 => .Left,
+                    1 => .Middle,
+                    2 => .Right,
+                    else => unreachable,
+                };
+
+                kind = .{ .Drag = mousebutton };
+            }
+        } else {
+            const button = cb & 0b11;
+
+            if (button == 3) {
+                kind = .{ .Up = .Left };
+            } else {
+                const mousebutton: event.MouseButton = switch (button) {
+                    0 => .Left,
+                    1 => .Middle,
+                    2 => .Right,
+                    else => unreachable,
+                };
+
+                kind = .{ .Down = mousebutton };
+            }
+        }
+        return .{ 
+            .event = .{ 
+                .mouse = .{
+                    .modifier = .{
+                        .Shift = (cb & 4) != 0,
+                        .Alt = (cb & 8) != 0,
+                        .Control = (cb & 16) != 0,
+                    },
+                    .column = self.params[1].value,
+                    .row = self.params[2].value,
+                    .kind = kind,
+                }
+            }
+        };
     }
 
     fn translateFunctionKeyCode(codepoint: u16) ?event.KeyEvent{

@@ -96,7 +96,7 @@ pub const Input = struct {
                 const b = self.buffer[self.start];
                 const remaining = self.len - self.start;
                 self.start += 1;
-
+                
                 switch (p.step(b)) {
                     .invalid => return error.InvalidEventFound,
                     .event => |e| return e,
