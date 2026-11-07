@@ -11,8 +11,13 @@ pub const Input = struct {
     buffer: [64]u8 = undefined,
     start: usize = 0,
     len: usize = 0,
+    // Lossy on perpouse
 
     pub fn init(tty: *Tty) Input{
+        if(builtin.os.tag != .windows){
+            const unix = @import("sys/unix.zig");
+            if(!unix.inited) unix.init_resizecatch();
+        }
         return .{
             .tty = tty
         };
@@ -74,6 +79,13 @@ pub const Input = struct {
                 else => return event.Event{.key = .{ .code = .Null }},
             }
         }else{
+            if(builtin.os.tag != .windows){
+                const unix = @import("sys/unix.zig");
+                if(unix.resizes.len != 0){
+                    const ws = unix.resizes.pop().?;
+                    return .{ .resize = .{ ws.rows, ws.columns} };
+                }
+            }
             _ = self.poll(.fromMilliseconds(-1)) catch return error.FailedToReadEvent;
             if(self.len == 0){
                 self.len = self.tty.in_file.readStreaming(self.tty.io, &.{&self.buffer}) catch return error.FailedToReadEvent;

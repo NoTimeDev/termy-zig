@@ -54,8 +54,8 @@ pub fn main(init: std.process.Init) !void{
                         else => {},
                     }
                 },
-                .resize => {
-                    std.debug.print("Hello Resize!\n", .{});
+                .resize => |r|{
+                    std.debug.print("Hello Resize!, r: {}, c: {}\n", .{r[0], r[1]});
                 },
                 .mouse => |mouse|{
                     switch (mouse.kind) {

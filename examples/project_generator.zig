@@ -8,8 +8,8 @@ const Field = struct {
 };
 
 pub fn main(init: std.process.Init) !void {
-    const stdin = try termy.sysIn(init.io);
-    const stdout = try termy.sysOut(init.io);
+    const stdin = try termy.sysIn();
+    const stdout = try termy.sysOut();
 
     var buffer: [1024]u8 = undefined;
     var tty: termy.Tty = .init(init.io, stdout, &buffer, stdin);

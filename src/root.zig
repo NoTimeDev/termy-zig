@@ -16,19 +16,19 @@ pub const InputState = @import("state.zig").InputState;
 /// This is especially important on older Windows consoles or when using
 /// the WinAPI fallback, where using standard output for alternatescreen
 /// operations may cause the original screen contents to be lost.
-pub inline fn sysOut(io: std.Io) !std.Io.File{
+pub inline fn sysOut() !std.Io.File{
     return if(builtin.os.tag == .windows)
         @import("sys/windows/root.zig").sysOut()
     else 
-        @import("sys/unix.zig").tty(io);
+        @import("sys/unix.zig").tty();
 }
 
 /// Returns the terminal input file, On windows this is "CONIN$", on unix systems this is "/dev/tty".
-pub inline fn sysIn(io: std.Io) !std.Io.File{
+pub inline fn sysIn() !std.Io.File{
     return if(builtin.os.tag == .windows)
         @import("sys/windows/root.zig").sysIn()
     else 
-        @import("sys/unix.zig").tty(io);
+        @import("sys/unix.zig").tty();
 }
 
 pub const Tty = struct {
