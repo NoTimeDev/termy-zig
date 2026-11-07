@@ -1,11 +1,17 @@
+//! This file contains data structure representing events
+//!
+//! Note: On unix, some of these events cannot be reported without kitty's enhancement flags 
+
+/// An union enum of different types of events 
 pub const Event = union(enum) {
-    key: KeyEvent,
-    mouse: MouseEvent,
-    resize: struct { u16, u16 },
+    Key: KeyEvent,
+    Mouse: MouseEvent,
+    Resize: struct { u16, u16 },
     FocusGained,
     FocusLost,
 };
 
+/// Represents a Mouse Event 
 pub const MouseEvent = struct {
     kind: MouseEventKind,
     column: u16,
@@ -13,20 +19,26 @@ pub const MouseEvent = struct {
     modifier: KeyModifiers,
 };
 
+/// This structure holds the possible mouse events 
 pub const MouseEventKind = union(enum) {
     /// Mouse button pressed down
     Down: MouseButton,
+    
     /// Mouse button released
     Up: MouseButton,
-    /// Mouse moved while pressing the MouseButton
+    
+    /// Mouse moved while pressing a MouseButton
     Drag: MouseButton,
+    
     Moved,
+
     ScrollDown,
     ScrollUp,
     ScrollLeft,
     ScrollRight,
 };
 
+/// Represents a mouse button
 pub const MouseButton = enum {
     Left,
     Right,
@@ -34,6 +46,7 @@ pub const MouseButton = enum {
     Unknown,
 };
 
+/// Represents a key event 
 pub const KeyEvent = struct {
     code: KeyCode,
     modifier: KeyModifiers = .{},
@@ -41,24 +54,27 @@ pub const KeyEvent = struct {
     state: KeyState = .{},
 };
 
+/// Store extra state info about a key event
+/// Note: on unix this can only be read with `DISAMBIGUATE_ESCAPE_CODES` enabled
 pub const KeyState = packed struct {
     NumLock: bool = false,
     KeyPad: bool = false,
     CapsLock: bool = false,
 };
 
+/// Represents the kind of key click 
 pub const KeyKind = union(enum) {
     Press,
     Repeat: u16,
     Release,
 };
 
+/// Represents a key
 pub const KeyCode = union(enum) {
     Backspace,
     Enter,
     Left,
     Right,
-    BackTab,
     Up,
     Down,
     Home,
@@ -68,10 +84,18 @@ pub const KeyCode = union(enum) {
     Tab,
     Delete,
     Insert,
+    
+    /// Function keys
     F: u8,
+
+    /// A character
     Char: u21,
+    
+    /// Unkown key
     Null,
+
     Esc,
+
     CapsLock,
     ScrollLock,
     NumLock,
@@ -95,6 +119,7 @@ pub const KeyCode = union(enum) {
     KeyModifier: KeyModifierCode,
 };
 
+/// Represents a modifer key  
 pub const KeyModifierCode = enum {
     LeftShift,
     LeftControl,
@@ -112,4 +137,5 @@ pub const KeyModifierCode = enum {
     IsoLevel5Shift,
 };
 
+/// Represent the modifiers of a key
 pub const KeyModifiers = packed struct { Shift: bool = false, Control: bool = false, Alt: bool = false, Super: bool = false, Hyper: bool = false, Meta: bool = false };

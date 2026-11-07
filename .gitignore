@@ -1,5 +1,6 @@
 docs
-test.sh
+test.zig
+/examples/test.zig
 /zig-out
 /.zig-cache
 /src/old

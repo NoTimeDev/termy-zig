@@ -45,9 +45,11 @@ pub fn build(b: *std.Build) void {
     );
 
     const example_step = b.step("example", "Build and run all example programs");
+    const example_build_step = b.step("build_example", "Build all example programs");
     for([_][]const u8{
         "examples/color.zig",
-        "examples/project_generator.zig"
+        "examples/project_generator.zig",
+        "examples/progress_bar.zig"
     }) |path|{
         const name = std.fs.path.stem(path);
 
@@ -67,11 +69,12 @@ pub fn build(b: *std.Build) void {
             })
         });
         const run = b.addRunArtifact(exe);
-        b.installArtifact(exe);
+        const runi = b.addInstallArtifact(exe, .{});
         example_step.dependOn(&run.step);
+        example_build_step.dependOn(&runi.step);
     }
     const test_step = b.step("test", "Build and run test example");
-
+    const test_build_step = b.step("build_test", "Build and test example");
     const exe = b.addExecutable(.{
         .name = "test",
         .root_module = b.createModule(.{
@@ -85,6 +88,7 @@ pub fn build(b: *std.Build) void {
     });
 
     const run = b.addRunArtifact(exe);
-    b.installArtifact(exe);
+    const runi = b.addInstallArtifact(exe, .{});
     test_step.dependOn(&run.step);
+    test_build_step.dependOn(&runi.step);
 }

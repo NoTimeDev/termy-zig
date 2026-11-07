@@ -2,7 +2,7 @@ const event = @import("event.zig");
 const std = @import("std");
 
 pub const Response = union(enum) {
-    cursorPosition: struct { x: u16, y: u16 },
+    CursorPosition: struct { x: u16, y: u16 },
 };
 
 pub const InternalEvent = union(enum) {
@@ -47,15 +47,15 @@ pub const Parser = struct {
 
     pub fn step(self: *Parser, b: u8) InternalEvent {
         return switch (self.state) {
-            .ground => self.parseground(b),
-            .csi => self.parsecsi(b),
-            .escape => self.parseescape(b),
-            .utf8 => self.parseutf8(b),
-            .ss3 => self.parsess3(b),
+            .ground => self.parseGround(b),
+            .csi => self.parseCsi(b),
+            .escape => self.parseEscape(b),
+            .utf8 => self.parseUtf8(b),
+            .ss3 => self.parseSs3(b),
         };
     }
 
-    fn parseutf8(self: *Parser, b: u8) InternalEvent {
+    fn parseUtf8(self: *Parser, b: u8) InternalEvent {
         if (self.utf8_need == 0) {
             self.utf8_need = std.unicode.utf8ByteSequenceLength(b) catch return .invalid;
         }
@@ -72,7 +72,7 @@ pub const Parser = struct {
                 else => return .invalid,
             };
             self.utf8_pos = 0;
-            var key = Parser.emitchar(utf8);
+            var key = Parser.emitChar(utf8);
             switch (self.substate) {
                 .altchar => {
                     self.substate = .none;
@@ -80,12 +80,12 @@ pub const Parser = struct {
                 },
                 else => {},
             }
-            return .{ .event = .{ .key = key } };
+            return .{ .event = .{ .Key = key } };
         }
         return .incomplete;
     }
 
-    fn parsecsi(self: *Parser, b: u8) InternalEvent {
+    fn parseCsi(self: *Parser, b: u8) InternalEvent {
         switch (b) {
             '0'...'9' => {
                 self.curparam *= 10;
@@ -115,21 +115,21 @@ pub const Parser = struct {
         }
     }
 
-    fn parsess3(self: *Parser, b: u8) InternalEvent {
+    fn parseSs3(self: *Parser, b: u8) InternalEvent {
         switch (b) {
             'P'...'S' => return self.finishSs3(b),
             else => return .invalid,
         }
     }
 
-    fn parseescape(self: *Parser, b: u8) InternalEvent {
+    fn parseEscape(self: *Parser, b: u8) InternalEvent {
         switch (b) {
             '[' => {
                 self.state = .csi;
                 return .incomplete;
             },
             '\x1b' => {
-                return .{ .event = .{ .key = .{ .code = .Esc, .modifier = .{ .Alt = true } } } };
+                return .{ .event = .{ .Key = .{ .code = .Esc, .modifier = .{ .Alt = true } } } };
             },
             'O' => {
                 self.state = .ss3;
@@ -138,26 +138,26 @@ pub const Parser = struct {
             else => {
                 self.substate = .altchar;
                 self.state = .utf8;
-                return self.parseutf8(b);
+                return self.parseUtf8(b);
             },
         }
     }
 
-    fn parseground(self: *Parser, b: u8) InternalEvent {
+    fn parseGround(self: *Parser, b: u8) InternalEvent {
         switch (b) {
             '\x1b' => {
                 self.state = .escape;
                 return .incomplete;
             },
-            0x08, 0x7f => return .{ .event = .{ .key = .{ .code = .Backspace } } },
-            '\t' => return .{ .event = .{ .key = .{ .code = .Tab } } },
-            '\n', '\r' => return .{ .event = .{ .key = .{ .code = .Enter } } },
-            0x01...0x07, 0x0b...0x0c, 0x0e...0x1a => return .{ .event = .{ .key = .{ .code = .{ .Char = b + 'a' - 0x01 }, .modifier = .{ .Control = true } } } },
-            0x1C...0x1F => return .{ .event = .{ .key = .{ .code = .{ .Char = b + '4' - 0x1C }, .modifier = .{ .Control = true } } } },
-            0x0 => return .{ .event = .{ .key = .{ .code = .{ .Char = ' ' }, .modifier = .{ .Control = true } } } },
+            0x08, 0x7f => return .{ .event = .{ .Key = .{ .code = .Backspace } } },
+            '\t' => return .{ .event = .{ .Key = .{ .code = .Tab } } },
+            '\n', '\r' => return .{ .event = .{ .Key = .{ .code = .Enter } } },
+            0x01...0x07, 0x0b...0x0c, 0x0e...0x1a => return .{ .event = .{ .Key = .{ .code = .{ .Char = b + 'a' - 0x01 }, .modifier = .{ .Control = true } } } },
+            0x1C...0x1F => return .{ .event = .{ .Key = .{ .code = .{ .Char = b + '4' - 0x1C }, .modifier = .{ .Control = true } } } },
+            0x0 => return .{ .event = .{ .Key = .{ .code = .{ .Char = ' ' }, .modifier = .{ .Control = true } } } },
             else => {
                 self.state = .utf8;
-                return self.parseutf8(b);
+                return self.parseUtf8(b);
             },
         }
     }
@@ -165,30 +165,33 @@ pub const Parser = struct {
     fn finishSs3(self: *Parser, b: u8) InternalEvent {
         self.pushParam();
         switch (b) {
-            'A' => return .{ .event = .{ .key = .{ .code = .Up } } },
-            'B' => return .{ .event = .{ .key = .{ .code = .Down } } },
-            'C' => return .{ .event = .{ .key = .{ .code = .Right } } },
-            'D' => return .{ .event = .{ .key = .{ .code = .Left } } },
-            'F' => return .{ .event = .{ .key = .{ .code = .End } } },
-            'H' => return .{ .event = .{ .key = .{ .code = .Home } } },
+            'A' => return .{ .event = .{ .Key = .{ .code = .Up } } },
+            'B' => return .{ .event = .{ .Key = .{ .code = .Down } } },
+            'C' => return .{ .event = .{ .Key = .{ .code = .Right } } },
+            'D' => return .{ .event = .{ .Key = .{ .code = .Left } } },
+            'F' => return .{ .event = .{ .Key = .{ .code = .End } } },
+            'H' => return .{ .event = .{ .Key = .{ .code = .Home } } },
 
-            'P'...'S' => return .{ .event = .{ .key = .{ .code = .{ .F = b - 'P' + 1 } } } },
+            'P'...'S' => return .{ .event = .{ .Key = .{ .code = .{ .F = b - 'P' + 1 } } } },
             else => return .invalid,
         }
     }
 
     fn finishCsi(self: *Parser, b: u8) InternalEvent {
         self.pushParam();
-        const mod: event.KeyModifiers = if (self.param_count >= 2) modFromParam(self.params[1].value) else .{};
+        var mod: event.KeyModifiers = if (self.param_count >= 2) modFromParam(self.params[1].value) else .{};
         switch (b) {
-            'A' => return .{ .event = .{ .key = .{ .code = .Up, .modifier = mod } } },
-            'B' => return .{ .event = .{ .key = .{ .code = .Down, .modifier = mod } } },
-            'C' => return .{ .event = .{ .key = .{ .code = .Right, .modifier = mod } } },
-            'D' => return .{ .event = .{ .key = .{ .code = .Left, .modifier = mod } } },
-            'E', 'G' => return .{ .event = .{ .key = .{ .code = .KeypadBegin, .modifier = mod } } },
-            'F' => return .{ .event = .{ .key = .{ .code = .End, .modifier = mod } } },
-            'H' => return .{ .event = .{ .key = .{ .code = .Home, .modifier = mod } } },
-            'Z' => return .{ .event = .{ .key = .{ .code = .BackTab, .modifier = mod } } },
+            'A' => return .{ .event = .{ .Key = .{ .code = .Up, .modifier = mod } } },
+            'B' => return .{ .event = .{ .Key = .{ .code = .Down, .modifier = mod } } },
+            'C' => return .{ .event = .{ .Key = .{ .code = .Right, .modifier = mod } } },
+            'D' => return .{ .event = .{ .Key = .{ .code = .Left, .modifier = mod } } },
+            'E', 'G' => return .{ .event = .{ .Key = .{ .code = .KeypadBegin, .modifier = mod } } },
+            'F' => return .{ .event = .{ .Key = .{ .code = .End, .modifier = mod } } },
+            'H' => return .{ .event = .{ .Key = .{ .code = .Home, .modifier = mod } } },
+            'Z' => {
+                mod.Shift = true;
+                return .{ .event = .{ .Key = .{ .code = .Tab, .modifier = mod } } };
+            },
             'I' => return .{ .event = .FocusGained },
             'O' => return .{ .event = .FocusLost },
             '~' => {
@@ -206,21 +209,21 @@ pub const Parser = struct {
                     23...26 => .{ .F = @intCast(v - 12) },
                     28...29 => .{ .F = @intCast(v - 13) },
                     31...34 => .{ .F = @intCast(v - 14) },
-                    else => return .{ .event = .{ .key = .{ .code = .Null } } },
+                    else => return .{ .event = .{ .Key = .{ .code = .Null } } },
                 };
-                return .{ .event = .{ .key = .{ .code = code, .modifier = mod } } };
+                return .{ .event = .{ .Key = .{ .code = code, .modifier = mod } } };
             },
             'u' => {
                 if (self.param_count == 0) return .invalid;
 
-                var key = if (translateFunctionKeyCode(self.params[0].value)) |k|
-                    k
+                var key: event.KeyEvent = if (translateFunctionKeyCode(self.params[0].value)) |k|
+                    k 
                 else switch (self.params[0].value) {
-                    '\x1b' => event.KeyEvent{ .code = .Esc },
-                    '\r', '\n' => event.KeyEvent{ .code = .Enter },
-                    '\t' => event.KeyEvent{ .code = .Tab },
-                    0x7F => event.KeyEvent{ .code = .Backspace },
-                    else => event.KeyEvent{ .code = .{ .Char = @intCast(self.params[0].value) } },
+                    '\x1b' => .{ .code = .Esc },
+                    '\r', '\n' => .{ .code = .Enter },
+                    '\t' => .{ .code = .Tab },
+                    0x7F => .{ .code = .Backspace },
+                    else => .{ .code = .{.Char = @as(u21, @intCast(self.params[0].value)) } },
                 };
 
                 const modv: u16 = self.params[1].value -| 1;
@@ -240,14 +243,14 @@ pub const Parser = struct {
                     3 => .Release,
                     else => .Press,
                 };
-                return .{ .event = .{ .key = key } };
+                return .{ .event = .{ .Key = key } };
             },
             'M', 'm' => return if (self.use_srg)
-                self.parse_srg_mouse(b)
+                self.parseSrgMouse(b)
             else
-                self.parse_rxvt_mouse(),
+                self.parseRXVTMouse(),
             'R' => {
-                return .{ .response = .{ .cursorPosition = .{ .x = self.params[0].value, .y = self.params[1].value } } };
+                return .{ .response = .{ .CursorPosition = .{ .x = self.params[0].value, .y = self.params[1].value } } };
             },
             else => {
                 return .invalid;
@@ -255,7 +258,7 @@ pub const Parser = struct {
         }
     }
 
-    fn parse_srg_mouse(self: *Parser, b: u8) InternalEvent {
+    fn parseSrgMouse(self: *Parser, b: u8) InternalEvent {
         const cb = self.params[0].value;
         var kind: event.MouseEventKind = undefined;
 
@@ -284,7 +287,7 @@ pub const Parser = struct {
                 kind = .{ .Up = mousebutton };
             }
         }
-        return .{ .event = .{ .mouse = .{
+        return .{ .event = .{ .Mouse = .{
             .modifier = .{
                 .Shift = (cb & 4) != 0,
                 .Alt = (cb & 8) != 0,
@@ -296,7 +299,7 @@ pub const Parser = struct {
         } } };
     }
 
-    fn parse_rxvt_mouse(self: *Parser) InternalEvent {
+    fn parseRXVTMouse(self: *Parser) InternalEvent {
         const cb = self.params[0].value - 32;
         var kind: event.MouseEventKind = undefined;
 
@@ -339,7 +342,7 @@ pub const Parser = struct {
                 kind = .{ .Down = mousebutton };
             }
         }
-        return .{ .event = .{ .mouse = .{
+        return .{ .event = .{ .Mouse = .{
             .modifier = .{
                 .Shift = (cb & 4) != 0,
                 .Alt = (cb & 8) != 0,
@@ -437,7 +440,7 @@ pub const Parser = struct {
         };
     }
 
-    inline fn emitchar(ch: u21) event.KeyEvent {
+    inline fn emitChar(ch: u21) event.KeyEvent {
         return .{ .code = .{ .Char = ch } };
     }
 

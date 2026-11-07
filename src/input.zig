@@ -6,13 +6,16 @@ const parser = @import("parser.zig");
 const Ring = @import("utils.zig").Ring;
 const Tty = @import("root.zig").Tty;
 
+/// This structure allows the user to get events and send queries to the terminal 
+///
+/// Note: Having more than one `Input` instance can cause undefined behaviour
 pub const Input = struct {
     tty: *Tty,
     buffer: [64]u8 = undefined,
     start: usize = 0,
     len: usize = 0,
-    // Lossy on perpouse
 
+    /// Creates a new `Input` structure
     pub fn init(tty: *Tty) Input {
         if (builtin.os.tag != .windows) {
             const unix = @import("sys/unix.zig");
@@ -21,7 +24,9 @@ pub const Input = struct {
         return .{ .tty = tty };
     }
 
-    /// Polls for an event in a given time, true - event is available, false - event is not available
+    /// Polls for an event in a given time
+    ///
+    /// true - event is available, false - event is not available
     pub fn poll(self: *Input, timeout: std.Io.Duration) !bool {
         if (builtin.os.tag == .windows) {
             const win = @import("sys/windows/root.zig");
@@ -35,12 +40,12 @@ pub const Input = struct {
         }
     }
 
-    fn read_internal(self: *Input) !parser.InternalEvent {
+    fn readInternal(self: *Input) !parser.InternalEvent {
         if (builtin.os.tag != .windows) {
             const unix = @import("sys/unix.zig");
             if (unix.resizes.len != 0) {
                 const ws = unix.resizes.pop().?;
-                return .{ .event = .{ .resize = .{ ws.rows, ws.columns } } };
+                return .{ .event = .{ .Resize = .{ ws.rows, ws.columns } } };
             }
 
             _ = self.poll(.fromMilliseconds(-1)) catch return error.FailedToReadEvent;
@@ -68,12 +73,12 @@ pub const Input = struct {
                     .incomplete => {
                         if (b == '\x1b' and remaining == 1) {
                             if (!(self.poll(.fromMilliseconds(20)) catch return error.FailedToReadEvent)) {
-                                return .{ .event = .{ .key = .{ .code = .Esc } } };
+                                return .{ .event = .{ .Key = .{ .code = .Esc } } };
                             }
                         }
                         if (b == '[' and p.state == .csi and remaining == 1) {
                             if (!(self.poll(.fromMilliseconds(20)) catch return error.FailedToReadEvent)) {
-                                return .{ .event = .{ .key = .{ .code = .{ .Char = '[' }, .modifier = .{ .Alt = true } } } };
+                                return .{ .event = .{ .Key = .{ .code = .{ .Char = '[' }, .modifier = .{ .Alt = true } } } };
                             }
                         }
                     },
@@ -94,7 +99,7 @@ pub const Input = struct {
 
             switch (record.EventType) {
                 win.winapi.KEY_EVENT => {
-                    return .{ .key = win.translateKey(record.Event.KeyEvent) };
+                    return .{ .Key = win.translateKey(record.Event.KeyEvent) };
                 },
                 win.winapi.FOCUS_EVENT => {
                     if (record.Event.FocusEvent.bSetFocus == .FALSE) {
@@ -104,20 +109,20 @@ pub const Input = struct {
                     }
                 },
                 win.winapi.MOUSE_EVENT => {
-                    const e: event.Event = .{ .mouse = win.translateMouse(self.tty.out_writer.file.handle, self.tty.input_state.mouse_event, record.Event.MouseEvent) };
+                    const e: event.Event = .{ .Mouse = win.translateMouse(self.tty.out_writer.file.handle, self.tty.input_state.mouse_event, record.Event.MouseEvent) };
                     self.tty.input_state.mouse_event = record.Event.MouseEvent;
                     return e;
                 },
                 win.winapi.WINDOW_BUFFER_SIZE_EVENT => {
-                    return .{ .resize = .{ @intCast(record.Event.WindowBufferSizeEvent.dwSize.X), @intCast(record.Event.WindowBufferSizeEvent.dwSize.Y) } };
+                    return .{ .Resize = .{ @intCast(record.Event.WindowBufferSizeEvent.dwSize.X +| 1), @intCast(record.Event.WindowBufferSizeEvent.dwSize.Y +| 1) } };
                 },
-                win.winapi.MENU_EVENT => return .{ .key = .{ .code = .Null } },
+                win.winapi.MENU_EVENT => return .{ .Key = .{ .code = .Null } },
                 else => return error.InvalidEventFound,
             }
         } else {
-            switch (try self.read_internal()) {
+            switch (try self.readInternal()) {
                 .invalid => return error.InvalidEventFound,
-                .response => return .{ .key = .{ .code = .Null } },
+                .response => return .{ .Key = .{ .code = .Null } },
                 else => |e| return e.event,
             }
         }
@@ -140,7 +145,7 @@ pub const Input = struct {
             while (true) {
                 const start = std.Io.Clock.now(.awake, self.tty.io).toMilliseconds();
                 if (self.poll(.fromMilliseconds(left)) catch return error.FailedToQueryPosition) {
-                    switch (self.read_internal() catch return error.FailedToQueryPosition) {
+                    switch (self.readInternal() catch return error.FailedToQueryPosition) {
                         .invalid => return error.InvalidEventFound,
                         .event => |e| {
                             if (eventlist) |elist| {
@@ -149,7 +154,7 @@ pub const Input = struct {
                         },
                         .response => |r| {
                             switch (r) {
-                                .cursorPosition => |c| return .{ .x = c.x, .y = c.y },
+                                .CursorPosition => |c| return .{ .x = c.x, .y = c.y },
                             }
                         },
                         else => unreachable,

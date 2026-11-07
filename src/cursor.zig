@@ -1,10 +1,11 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const OutputState = @import("state.zig").OutputState;
+const event = @import("event.zig");
 const options = @import("options");
+
+const OutputState = @import("state.zig").OutputState;
 const Tty = @import("root.zig").Tty;
 const Input = @import("input.zig").Input;
-const event = @import("event.zig");
 
 /// This structure contains functions, which can be used to manipulate the cursor
 pub const Cursor = struct {
@@ -17,21 +18,24 @@ pub const Cursor = struct {
 
         /// A block cursor shape `■`
         SteadyBlock,
+
         /// A blinking version of `SteadyBlock`
         BlinkingBlock,
 
         /// An underscore cursor shape `_`
         SteadyUnderScore,
+
         /// A blinking version of `SteadyUnderScore`
         BlinkingUnderScore,
 
         /// A bar cursor shape `|`
         SteadyBar,
+        
         /// A blinking version of `SteadyBar`
         BlinkingBar,
     };
 
-    /// Inits a `Cursor` structure
+    /// Creates a `Cursor` structure
     pub inline fn init(tty: *Tty) Cursor {
         return .{ .tty = tty };
     }
@@ -143,7 +147,7 @@ pub const Cursor = struct {
         self.tty.out_writer.interface.print("\x1b[{}d", .{n}) catch return error.FailedToMoveCursor;
     }
 
-    /// Moves the cursor to the speficied positon(x, y)
+    /// Moves the cursor to the specified positon(x, y)
     pub fn moveTo(self: *Cursor, x: u16, y: u16) !void {
         if (builtin.os.tag == .windows and options.out != .vt) {
             const win = @import("sys/windows/root.zig");
@@ -227,7 +231,7 @@ pub const Cursor = struct {
     /// - `BlinkingUnderScore`
     /// - `BlinkingBlock`
     ///
-    /// Whether the cursor blinks is terminal dependent
+    /// In this case 'Blinking' and 'Steady' will have the same effect
     pub fn setCursorStyle(self: *Cursor, style: CursorStyle) !void {
         if (builtin.os.tag == .windows and options.out != .vt) {
             const win = @import("sys/windows/root.zig");
@@ -280,7 +284,6 @@ pub const Cursor = struct {
             .BlinkingBar => 5,
             .SteadyBar => 6,
         };
-        // Check if this its better to format, or match and use .writeAll
         self.tty.out_writer.interface.print("\x1b[{}\x20q", .{value}) catch return error.FailedToSetCursorStyle;
     }
 };
