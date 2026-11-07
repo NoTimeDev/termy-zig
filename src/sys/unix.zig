@@ -3,33 +3,40 @@ const builtin = @import("builtin");
 const Lazy = @import("../utils.zig").Lazy;
 const Ring = @import("../utils.zig").Ring;
 
-var tty_val: Lazy(anyerror!std.Io.File, struct{
-    pub fn init() !std.Io.File{
-        const fd = std.posix.openat(std.posix.AT.FDCWD, "/dev/tty", .{ .ACCMODE =  .RDWR}, 0) catch return error.FailedToOpenTty;
+pub inline fn pollfd(fd: std.posix.fd_t, timeout: i32) !bool {
+    var fds = [_]std.posix.pollfd{.{
+        .fd = fd,
+        .events = std.posix.POLL.IN,
+        .revents = 0,
+    }};
+    const ready = std.posix.poll(&fds, timeout) catch return error.PollFailed;
+    if (ready == 0) {
+        return false;
+    } else if ((fds[0].revents & std.posix.POLL.IN) != 0) {
+        return true;
+    }
+    return false;
+}
+pub var tty_val: Lazy(anyerror!std.Io.File, struct {
+    pub fn init() !std.Io.File {
+        const fd = std.posix.openat(std.posix.AT.FDCWD, "/dev/tty", .{ .ACCMODE = .RDWR }, 0) catch return error.FailedToOpenTty;
 
-        return .{
-            .handle = fd,
-            .flags = .{ .nonblocking = false}
-        };
+        return .{ .handle = fd, .flags = .{ .nonblocking = false } };
     }
 }.init) = .{};
 
-
 // Lossy on perpouse
-pub var resizes: if(builtin.os.tag == .windows) struct {} else Ring(struct{rows: u16, columns: u16}, 128) = .{};
+pub var resizes: if (builtin.os.tag == .windows) struct {} else Ring(struct { rows: u16, columns: u16 }, 128) = .{};
 pub var inited: bool = false;
 
-pub fn handleWinch(_: std.posix.SIG) callconv(.c) void{
+pub fn handleWinch(_: std.posix.SIG) callconv(.c) void {
     var ws: std.posix.winsize = undefined;
-    if(std.posix.errno(std.posix.system.ioctl( (tty_val.get(.{}) catch return).handle, std.posix.T.IOCGWINSZ, @intFromPtr(&ws))) == .SUCCESS){
-        resizes.push(.{
-            .rows = ws.row,
-            .columns = ws.col
-        });
+    if (std.posix.errno(std.posix.system.ioctl((tty_val.get(.{}) catch return).handle, std.posix.T.IOCGWINSZ, @intFromPtr(&ws))) == .SUCCESS) {
+        resizes.push(.{ .rows = ws.row, .columns = ws.col });
     }
 }
 
-pub fn init_resizecatch() void{    
+pub fn init_resizecatch() void {
     const action: std.posix.Sigaction = .{
         .handler = .{ .handler = handleWinch },
         .mask = std.posix.sigemptyset(),
@@ -40,7 +47,6 @@ pub fn init_resizecatch() void{
     inited = true;
 }
 
-pub inline fn tty() !std.Io.File{
+pub inline fn tty() !std.Io.File {
     return tty_val.get(.{});
 }
-

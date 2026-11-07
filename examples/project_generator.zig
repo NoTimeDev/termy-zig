@@ -15,7 +15,7 @@ pub fn main(init: std.process.Init) !void {
     var tty: termy.Tty = .init(init.io, stdout, &buffer, stdin);
     var terminal: termy.Terminal = .init(&tty);
     var input: termy.Input = .init(&tty);
-    var cursor: termy.Cusor = .init(&tty);
+    var cursor: termy.Cursor = .init(&tty);
     var style: termy.Style = .init(&tty);
     var writer = tty.writer();
 
@@ -57,8 +57,8 @@ pub fn main(init: std.process.Init) !void {
             const event = try input.read();
 
             switch (event) {
-                .key => |key|{ 
-                    if(key.kind != .Press) continue;
+                .key => |key| {
+                    if (key.kind != .Press) continue;
                     switch (key.code) {
                         .Esc => {
                             cancelled = true;

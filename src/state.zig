@@ -14,28 +14,26 @@ pub const WindowsOutputState = struct {
     reversed: bool = false,
     original_handle: windows.HANDLE = windows.INVALID_HANDLE_VALUE,
     supported: win.WinSupportedFeatures,
-    pub fn init(file: std.Io.File) WindowsOutputState{
+    pub fn init(file: std.Io.File) WindowsOutputState {
         win.enableOutVT(file.handle);
-        return .{
-            .supported = win.getSupported(file.handle)
-        };
+        return .{ .supported = win.getSupported(file.handle) };
     }
 };
 
 pub const UnixOutputState = struct {
     original_state: std.posix.termios = undefined,
 
-    pub inline fn init(file: std.Io.File) UnixOutputState{
+    pub inline fn init(file: std.Io.File) UnixOutputState {
         _ = file;
         return .{};
     }
 };
 
 /// This structure contains os specfic information about the terminal output state
-/// Each output file should use its own OutputState instance, sharing a OutputState instance will cause UB 
-pub const OutputState = if(builtin.os.tag == .windows)
-    WindowsOutputState 
-else 
+/// Each output file should use its own OutputState instance, sharing a OutputState instance will cause UB
+pub const OutputState = if (builtin.os.tag == .windows)
+    WindowsOutputState
+else
     UnixOutputState;
 
 pub const WindowsInputState = struct {
@@ -44,7 +42,7 @@ pub const WindowsInputState = struct {
     original_state: windows.DWORD = undefined,
     mouse_event: win.winapi.MOUSE_EVENT_RECORD = undefined,
 
-    pub inline fn init(file: std.Io.File) WindowsInputState{
+    pub inline fn init(file: std.Io.File) WindowsInputState {
         _ = file;
         var is = WindowsInputState{};
         is.mouse_event.dwButtonState = 0;
@@ -54,18 +52,15 @@ pub const WindowsInputState = struct {
 
 pub const UnixInputState = struct {
     original_state: std.posix.termios = undefined,
-    pub inline fn init(file: std.Io.File) UnixInputState{
+    pub inline fn init(file: std.Io.File) UnixInputState {
         _ = file;
-        return .{
-
-        };
+        return .{};
     }
 };
 
 /// This structure contains os specfic information about the terminals input state
-/// Each output file should use its own OutputState instance, sharing a OutputState instance will cause UB 
-pub const InputState = if(builtin.os.tag == .windows)
-    WindowsInputState 
-else 
+/// Each output file should use its own OutputState instance, sharing a OutputState instance will cause UB
+pub const InputState = if (builtin.os.tag == .windows)
+    WindowsInputState
+else
     UnixInputState;
-

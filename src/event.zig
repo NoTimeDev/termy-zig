@@ -1,7 +1,7 @@
-pub const Event = union(enum){
+pub const Event = union(enum) {
     key: KeyEvent,
     mouse: MouseEvent,
-    resize: struct {u16, u16},
+    resize: struct { u16, u16 },
     FocusGained,
     FocusLost,
 };
@@ -13,10 +13,10 @@ pub const MouseEvent = struct {
     modifier: KeyModifiers,
 };
 
-pub const MouseEventKind = union(enum){
-    /// Mouse button pressed down 
+pub const MouseEventKind = union(enum) {
+    /// Mouse button pressed down
     Down: MouseButton,
-    /// Mouse button released 
+    /// Mouse button released
     Up: MouseButton,
     /// Mouse moved while pressing the MouseButton
     Drag: MouseButton,
@@ -35,25 +35,25 @@ pub const MouseButton = enum {
 };
 
 pub const KeyEvent = struct {
-    code: KeyCode, 
+    code: KeyCode,
     modifier: KeyModifiers = .{},
     kind: KeyKind = .Press,
     state: KeyState = .{},
 };
 
-pub const KeyState = packed struct{
+pub const KeyState = packed struct {
     NumLock: bool = false,
     KeyPad: bool = false,
-    CapsLock: bool = false,   
+    CapsLock: bool = false,
 };
 
-pub const KeyKind = union(enum){
+pub const KeyKind = union(enum) {
     Press,
     Repeat: u16,
     Release,
 };
 
-pub const KeyCode = union(enum){
+pub const KeyCode = union(enum) {
     Backspace,
     Enter,
     Left,
@@ -112,11 +112,4 @@ pub const KeyModifierCode = enum {
     IsoLevel5Shift,
 };
 
-pub const KeyModifiers = packed struct{
-    Shift: bool = false,
-    Control: bool = false, 
-    Alt: bool = false,
-    Super: bool = false,
-    Hyper: bool = false,
-    Meta: bool = false
-};
+pub const KeyModifiers = packed struct { Shift: bool = false, Control: bool = false, Alt: bool = false, Super: bool = false, Hyper: bool = false, Meta: bool = false };

@@ -1,60 +1,31 @@
 const windows = @import("std").os.windows;
 
-pub const CONSOLE_CURSOR_INFO = extern struct{
-    dwSize: windows.DWORD,
-    bVisible: windows.BOOL
+pub const CONSOLE_CURSOR_INFO = extern struct { dwSize: windows.DWORD, bVisible: windows.BOOL };
+
+pub const SMALL_RECT = extern struct { Left: windows.WORD, Top: windows.WORD, Right: windows.WORD, Bottom: windows.WORD };
+
+pub const CONSOLE_SCREEN_BUFFER_INFO = extern struct {
+    dwSize: windows.COORD,
+    dwCursorPosition: windows.COORD,
+    wAttributes: windows.WORD,
+    srWindow: SMALL_RECT,
+    dwMaximumWindowSize: windows.COORD,
 };
 
-pub const SMALL_RECT = extern struct{
-    Left: windows.WORD,
-    Top: windows.WORD,
-    Right: windows.WORD,
-    Bottom: windows.WORD
-};
+pub const CHAR = extern union { UnicodeChar: windows.WCHAR, AsciiChar: windows.CHAR };
 
-pub const CONSOLE_SCREEN_BUFFER_INFO  = extern struct{
-  dwSize: windows.COORD,
-  dwCursorPosition: windows.COORD,
-  wAttributes: windows.WORD,
-  srWindow: SMALL_RECT,
-  dwMaximumWindowSize: windows.COORD,
-};
+pub const KEY_EVENT_RECORD = extern struct { bKeyDown: windows.BOOL, wRepeatCount: windows.WORD, wVirtualKeyCode: windows.WORD, wVirtualScanCode: windows.WORD, uChar: CHAR, dwControlKeyState: windows.DWORD };
 
-pub const CHAR = extern union {
-    UnicodeChar: windows.WCHAR,
-    AsciiChar: windows.CHAR
-};
+pub const MOUSE_EVENT_RECORD = extern struct { dwMousePosition: windows.COORD, dwButtonState: windows.DWORD, dwControlKeyState: windows.DWORD, dwEventFlags: windows.DWORD };
 
-pub const KEY_EVENT_RECORD = extern struct {
-    bKeyDown: windows.BOOL,
-    wRepeatCount: windows.WORD,
-    wVirtualKeyCode: windows.WORD,
-    wVirtualScanCode: windows.WORD,
-    uChar: CHAR,
-    dwControlKeyState: windows.DWORD
-};
+pub const WINDOW_BUFFER_SIZE_RECORD = extern struct { dwSize: windows.COORD };
 
-pub const MOUSE_EVENT_RECORD = extern struct {
-    dwMousePosition: windows.COORD,
-    dwButtonState: windows.DWORD,
-    dwControlKeyState: windows.DWORD,
-    dwEventFlags: windows.DWORD
-};
+pub const MENU_EVENT_RECORD = extern struct { dwCommandId: windows.UINT };
 
-pub const WINDOW_BUFFER_SIZE_RECORD = extern struct {
-    dwSize: windows.COORD
-};
-
-pub const MENU_EVENT_RECORD = extern struct {
-    dwCommandId: windows.UINT
-};
-
-pub const FOCUS_EVENT_RECORD = extern struct {
-    bSetFocus: windows.BOOL
-};
+pub const FOCUS_EVENT_RECORD = extern struct { bSetFocus: windows.BOOL };
 
 pub const INPUT_RECORD = extern struct {
-    const EVENT = extern union{
+    const EVENT = extern union {
         KeyEvent: KEY_EVENT_RECORD,
         MouseEvent: MOUSE_EVENT_RECORD,
         WindowBufferSizeEvent: WINDOW_BUFFER_SIZE_RECORD,
@@ -64,142 +35,67 @@ pub const INPUT_RECORD = extern struct {
     EventType: windows.WORD,
     Event: EVENT,
 };
-  
 
-pub const CHAR_INFO = extern struct{
-  Char: CHAR,
-  Attributes: windows.WORD,
+pub const CHAR_INFO = extern struct {
+    Char: CHAR,
+    Attributes: windows.WORD,
 };
 
-pub extern "kernel32" fn CreateFileW(
-    lpFileName: windows.LPCWSTR,
-    dwDesiredAccess: windows.DWORD,
-    dwShareMode: windows.DWORD,
-    lpSecurityAttributes: ?*windows.SECURITY_ATTRIBUTES,
-    dwCreationDisposition: windows.DWORD,
-    dwFlagsAndAttributes: windows.DWORD,
-    hTemplateFile: ?windows.HANDLE
-) callconv(.winapi) windows.HANDLE;
+pub extern "kernel32" fn CreateFileW(lpFileName: windows.LPCWSTR, dwDesiredAccess: windows.DWORD, dwShareMode: windows.DWORD, lpSecurityAttributes: ?*windows.SECURITY_ATTRIBUTES, dwCreationDisposition: windows.DWORD, dwFlagsAndAttributes: windows.DWORD, hTemplateFile: ?windows.HANDLE) callconv(.winapi) windows.HANDLE;
 
 pub extern "kernel32" fn WaitForSingleObject(
     hHandle: windows.HANDLE,
-    dwMilliseconds: windows.DWORD, 
+    dwMilliseconds: windows.DWORD,
 ) callconv(.winapi) windows.DWORD;
 
-pub extern "kernel32" fn GetConsoleMode(
-    hConsoleHandle: windows.HANDLE,
-    lpMode: *windows.DWORD
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn GetConsoleMode(hConsoleHandle: windows.HANDLE, lpMode: *windows.DWORD) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn SetConsoleMode(
-    hConsoleHandle: windows.HANDLE,
-    dwMode: windows.DWORD
-) callconv(.winapi) windows.BOOL;
- 
-pub extern "kernel32" fn SetConsoleCursorPosition(
-    hConsoleOutput: windows.HANDLE,
-    dwCursorPosition: windows.COORD  
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn SetConsoleMode(hConsoleHandle: windows.HANDLE, dwMode: windows.DWORD) callconv(.winapi) windows.BOOL;
 
+pub extern "kernel32" fn SetConsoleCursorPosition(hConsoleOutput: windows.HANDLE, dwCursorPosition: windows.COORD) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn SetConsoleCursorInfo(
-    hConsoleOutput: windows.HANDLE,
-    lpConsoleCursorInfo: *CONSOLE_CURSOR_INFO
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn SetConsoleCursorInfo(hConsoleOutput: windows.HANDLE, lpConsoleCursorInfo: *CONSOLE_CURSOR_INFO) callconv(.winapi) windows.BOOL;
 
 pub extern "kernel32" fn GetConsoleCursorInfo(
     hConsoleOutput: windows.HANDLE,
     lpConsoleCursorInfo: *CONSOLE_CURSOR_INFO,
-) callconv(.winapi) windows.BOOL; 
-
-pub extern "kernel32" fn GetConsoleScreenBufferInfo(
-    hConsoleOutput: windows.HANDLE,
-    lpConsoleScreenBufferInfo: *CONSOLE_SCREEN_BUFFER_INFO
 ) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn SetConsoleTextAttribute(
-    hConsoleOutput: windows.HANDLE,
-    wAttributes: windows.WORD
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn GetConsoleScreenBufferInfo(hConsoleOutput: windows.HANDLE, lpConsoleScreenBufferInfo: *CONSOLE_SCREEN_BUFFER_INFO) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn CreateConsoleScreenBuffer(
-  dwDesiredAccess: windows.DWORD,
-  dwShareMode: windows.DWORD,
-  lpSecurityAttributes: ?*const windows.SECURITY_ATTRIBUTES,
-  dwFlags: windows.DWORD,
-  lpScreenBufferData: ?windows.LPVOID
-) callconv(.winapi) windows.HANDLE;
+pub extern "kernel32" fn SetConsoleTextAttribute(hConsoleOutput: windows.HANDLE, wAttributes: windows.WORD) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn SetConsoleActiveScreenBuffer(
-    SetConsoleActiveScreenBuffer: windows.HANDLE
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn CreateConsoleScreenBuffer(dwDesiredAccess: windows.DWORD, dwShareMode: windows.DWORD, lpSecurityAttributes: ?*const windows.SECURITY_ATTRIBUTES, dwFlags: windows.DWORD, lpScreenBufferData: ?windows.LPVOID) callconv(.winapi) windows.HANDLE;
 
-pub extern "kernel32" fn SetConsoleTitleW(
-    lpConsoleTitle: windows.LPCWSTR
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn SetConsoleActiveScreenBuffer(SetConsoleActiveScreenBuffer: windows.HANDLE) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn ScrollConsoleScreenBufferW(
-    hConsoleOutput: windows.HANDLE,
-    lpScrollRectangle: *const SMALL_RECT,
-    lpClipRectangle: *const SMALL_RECT,
-    dwDestinationOrigin: windows.COORD,
-    lpFill: *const CHAR_INFO
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn SetConsoleTitleW(lpConsoleTitle: windows.LPCWSTR) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn SetConsoleWindowInfo(
-    hConsoleOutput: windows.HANDLE,
-    bAbsolute: windows.BOOL,
-    lpConsoleWindow: *const SMALL_RECT
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn ScrollConsoleScreenBufferW(hConsoleOutput: windows.HANDLE, lpScrollRectangle: *const SMALL_RECT, lpClipRectangle: *const SMALL_RECT, dwDestinationOrigin: windows.COORD, lpFill: *const CHAR_INFO) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn FillConsoleOutputCharacterA(
-    hConsoleOutput: windows.HANDLE,
-    cCharacter: windows.CHAR,
-    nLength: windows.DWORD,
-    dwWriteCoord: windows.COORD,
-    lpNumberOfCharsWritten: *windows.DWORD
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn SetConsoleWindowInfo(hConsoleOutput: windows.HANDLE, bAbsolute: windows.BOOL, lpConsoleWindow: *const SMALL_RECT) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn FillConsoleOutputAttribute(
-    hConsoleOutput: windows.HANDLE,
-    wAttribute: windows.WORD,
-    nLength: windows.DWORD,
-    dwWriteCoord: windows.COORD,
-    lpNumberOfAttrsWritten: *windows.DWORD
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn FillConsoleOutputCharacterA(hConsoleOutput: windows.HANDLE, cCharacter: windows.CHAR, nLength: windows.DWORD, dwWriteCoord: windows.COORD, lpNumberOfCharsWritten: *windows.DWORD) callconv(.winapi) windows.BOOL;
+
+pub extern "kernel32" fn FillConsoleOutputAttribute(hConsoleOutput: windows.HANDLE, wAttribute: windows.WORD, nLength: windows.DWORD, dwWriteCoord: windows.COORD, lpNumberOfAttrsWritten: *windows.DWORD) callconv(.winapi) windows.BOOL;
 
 pub extern "kernel32" fn SetConsoleOutputCP(
-  wCodePageID: windows.UINT,
+    wCodePageID: windows.UINT,
 ) callconv(.winapi) windows.BOOL;
 
 pub extern "kernel32" fn SetConsoleCP(
-  wCodePageID: windows.UINT,
+    wCodePageID: windows.UINT,
 ) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn ReadConsoleInputW(
-  hConsoleInput: windows.HANDLE,
-  lpBuffer: *INPUT_RECORD,
-  nLength: windows.DWORD,
-  lpNumberOfEventsRead: *windows.DWORD
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn ReadConsoleInputW(hConsoleInput: windows.HANDLE, lpBuffer: *INPUT_RECORD, nLength: windows.DWORD, lpNumberOfEventsRead: *windows.DWORD) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn GetStdHandle(
-    nStdHandle: windows.DWORD
-) callconv(.winapi) windows.HANDLE;
+pub extern "kernel32" fn GetStdHandle(nStdHandle: windows.DWORD) callconv(.winapi) windows.HANDLE;
 
-pub extern "kernel32" fn SetStdHandle(
-    nStdHandle: windows.DWORD,
-    hHandle: windows.HANDLE
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn SetStdHandle(nStdHandle: windows.DWORD, hHandle: windows.HANDLE) callconv(.winapi) windows.BOOL;
 
-pub extern "kernel32" fn FlushConsoleInputBuffer(
-    hConsoleInput: windows.HANDLE
-) callconv(.winapi) windows.BOOL;
+pub extern "kernel32" fn FlushConsoleInputBuffer(hConsoleInput: windows.HANDLE) callconv(.winapi) windows.BOOL;
 
-pub extern "user32" fn MapVirtualKeyW(
-    uCode: windows.UINT,
-    uMapType: windows.UINT
-) callconv(.winapi) windows.UINT;
+pub extern "user32" fn MapVirtualKeyW(uCode: windows.UINT, uMapType: windows.UINT) callconv(.winapi) windows.UINT;
 
 pub extern "kernel32" fn GetConsoleCP() callconv(.winapi) windows.UINT;
 pub extern "kernel32" fn GetConsoleOutputCP() callconv(.winapi) windows.UINT;
@@ -209,40 +105,40 @@ pub const MAPVK_VSC_TO_VK_EX: windows.UINT = 3;
 pub const FOCUS_EVENT: windows.WORD = 0x0010;
 pub const KEY_EVENT: windows.WORD = 0x0001;
 pub const MENU_EVENT: windows.WORD = 0x0008;
-pub const MOUSE_EVENT: windows.WORD  = 0x0002;
+pub const MOUSE_EVENT: windows.WORD = 0x0002;
 pub const WINDOW_BUFFER_SIZE_EVENT: windows.WORD = 0x0004;
 
-pub const ENABLE_PROCESSED_INPUT: u32                  = 0x0001;
-pub const ENABLE_LINE_INPUT: u32                       = 0x0002;
-pub const ENABLE_ECHO_INPUT: u32                       = 0x0004;
-pub const ENABLE_VIRTUAL_TERMINAL_INPUT: u32           = 0x0200;
+pub const ENABLE_PROCESSED_INPUT: u32 = 0x0001;
+pub const ENABLE_LINE_INPUT: u32 = 0x0002;
+pub const ENABLE_ECHO_INPUT: u32 = 0x0004;
+pub const ENABLE_VIRTUAL_TERMINAL_INPUT: u32 = 0x0200;
 pub const ENABLE_QUICK_EDIT_MODE: u32 = 0x0040;
 pub const ENABLE_MOUSE_INPUT: u32 = 0x0010;
 
-pub const ENABLE_WRAP_AT_EOL_OUTPUT: u32 =0x0002;
-pub const ENABLE_PROCESSED_OUTPUT: u32                 = 0x0001;
-pub const ENABLE_VIRTUAL_TERMINAL_PROCESSING: u32      = 0x0004;
+pub const ENABLE_WRAP_AT_EOL_OUTPUT: u32 = 0x0002;
+pub const ENABLE_PROCESSED_OUTPUT: u32 = 0x0001;
+pub const ENABLE_VIRTUAL_TERMINAL_PROCESSING: u32 = 0x0004;
 
-pub const GENERIC_READ: windows.DWORD                  = 0x80000000;
-pub const GENERIC_WRITE: windows.DWORD                 = 0x40000000;
-pub const FILE_SHARE_WRITE: windows.DWORD              = 0x00000002;
-pub const FILE_SHARE_READ: windows.DWORD               = 0x00000001;
-pub const OPEN_EXISTING: windows.DWORD                 = 3;
-pub const WAIT_FAILED: windows.DWORD                   = 0xFFFFFFFF;
-pub const WAIT_OBJECT_0: windows.DWORD                 = 0;
-pub const CONSOLE_TEXTMODE_BUFFER: windows.DWORD       = 1;
+pub const GENERIC_READ: windows.DWORD = 0x80000000;
+pub const GENERIC_WRITE: windows.DWORD = 0x40000000;
+pub const FILE_SHARE_WRITE: windows.DWORD = 0x00000002;
+pub const FILE_SHARE_READ: windows.DWORD = 0x00000001;
+pub const OPEN_EXISTING: windows.DWORD = 3;
+pub const WAIT_FAILED: windows.DWORD = 0xFFFFFFFF;
+pub const WAIT_OBJECT_0: windows.DWORD = 0;
+pub const CONSOLE_TEXTMODE_BUFFER: windows.DWORD = 1;
 
 pub const COMMON_LVB_UNDERSCORE: u16 = 0x8000;
-pub const FOREGROUND_BLUE: u16                         = 0x0001;
-pub const FOREGROUND_GREEN: u16                        = 0x0002;
-pub const FOREGROUND_RED: u16                          = 0x0004;
-pub const FOREGROUND_INTENSITY: u16                    = 0x0008;
-pub const BACKGROUND_BLUE: u16                         = 0x0010;
-pub const BACKGROUND_GREEN: u16                        = 0x0020;
-pub const BACKGROUND_RED: u16                          = 0x0040;
-pub const BACKGROUND_INTENSITY: u16                    = 0x0080;
-pub const FG_MASK: u16                                 = 0x000F;
-pub const BG_MASK: u16                                 = 0x00F0;
+pub const FOREGROUND_BLUE: u16 = 0x0001;
+pub const FOREGROUND_GREEN: u16 = 0x0002;
+pub const FOREGROUND_RED: u16 = 0x0004;
+pub const FOREGROUND_INTENSITY: u16 = 0x0008;
+pub const BACKGROUND_BLUE: u16 = 0x0010;
+pub const BACKGROUND_GREEN: u16 = 0x0020;
+pub const BACKGROUND_RED: u16 = 0x0040;
+pub const BACKGROUND_INTENSITY: u16 = 0x0080;
+pub const FG_MASK: u16 = 0x000F;
+pub const BG_MASK: u16 = 0x00F0;
 
 pub const FROM_LEFT_1ST_BUTTON_PRESSED: u32 = 0x0001;
 pub const RIGHTMOST_BUTTON_PRESSED: u32 = 0x0002;

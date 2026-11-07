@@ -2,7 +2,7 @@ const std = @import("std");
 const termy = @import("termy");
 
 // This file just has some abitrary test!
-pub fn main(init: std.process.Init) !void{
+pub fn main(init: std.process.Init) !void {
     const stdin = std.Io.File.stdin();
     const stdout = std.Io.File.stdout();
     var buffer: [1024]u8 = undefined;
@@ -12,12 +12,12 @@ pub fn main(init: std.process.Init) !void{
     var input: termy.Input = .init(&tty);
     var writer = tty.writer();
     var x: std.ArrayList(termy.event.Event) = .empty;
-    
+
     defer {
-        for(x.items)|i|{
-            var w: std.Io.Writer.Allocating = .init(std.heap.smp_allocator); 
+        for (x.items) |i| {
+            var w: std.Io.Writer.Allocating = .init(std.heap.smp_allocator);
             defer w.deinit();
-            std.json.Stringify.value(i, .{.whitespace = .indent_2}, &w.writer) catch {};
+            std.json.Stringify.value(i, .{ .whitespace = .indent_2 }, &w.writer) catch {};
             std.debug.print("{s}\n", .{w.written()});
         }
     }
@@ -40,24 +40,23 @@ pub fn main(init: std.process.Init) !void{
     defer terminal.disableRawMode() catch {};
     try writer.flush();
 
-
     while (true) {
-        if(try input.poll(.fromMilliseconds(20))){
+        if (try input.poll(.fromMilliseconds(20))) {
             const event = try input.read();
             try x.append(std.heap.smp_allocator, event);
             switch (event) {
-                .key => |key|{
+                .key => |key| {
                     switch (key.code) {
-                        .Char => |ch|{
-                            if(ch == 'q') break;
+                        .Char => |ch| {
+                            if (ch == 'q') break;
                         },
                         else => {},
                     }
                 },
-                .resize => |r|{
-                    std.debug.print("Hello Resize!, r: {}, c: {}\n", .{r[0], r[1]});
+                .resize => |r| {
+                    std.debug.print("Hello Resize!, r: {}, c: {}\n", .{ r[0], r[1] });
                 },
-                .mouse => |mouse|{
+                .mouse => |mouse| {
                     switch (mouse.kind) {
                         .Down => std.debug.print("Down", .{}),
                         .Up => std.debug.print("Up", .{}),
