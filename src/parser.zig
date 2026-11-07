@@ -217,13 +217,13 @@ pub const Parser = struct {
                 if (self.param_count == 0) return .invalid;
 
                 var key: event.KeyEvent = if (translateFunctionKeyCode(self.params[0].value)) |k|
-                    k 
+                    k
                 else switch (self.params[0].value) {
                     '\x1b' => .{ .code = .Esc },
                     '\r', '\n' => .{ .code = .Enter },
                     '\t' => .{ .code = .Tab },
                     0x7F => .{ .code = .Backspace },
-                    else => .{ .code = .{.Char = @as(u21, @intCast(self.params[0].value)) } },
+                    else => .{ .code = .{ .Char = @as(u21, @intCast(self.params[0].value)) } },
                 };
 
                 const modv: u16 = self.params[1].value -| 1;

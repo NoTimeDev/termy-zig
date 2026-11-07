@@ -30,7 +30,7 @@ pub const Cursor = struct {
 
         /// A bar cursor shape `|`
         SteadyBar,
-        
+
         /// A blinking version of `SteadyBar`
         BlinkingBar,
     };

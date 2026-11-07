@@ -1,4 +1,4 @@
-//! A simple interactive cli 
+//! A simple interactive cli
 
 const std = @import("std");
 const termy = @import("termy");
@@ -7,7 +7,7 @@ const termy = @import("termy");
 const Field = struct {
     /// Promt, text displayed before output
     prompt: []const u8,
-    
+
     /// Dimmed text when a field is empty
     placeholder: []const u8,
 
@@ -20,7 +20,7 @@ pub fn main(init: std.process.Init) !void {
     const stdout = std.Io.File.stdout();
 
     var buffer: [1024]u8 = undefined;
-    
+
     // Init our tools
     var tty: termy.Tty = .init(init.io, stdout, &buffer, stdin);
     var terminal: termy.Terminal = .init(&tty);
@@ -32,19 +32,19 @@ pub fn main(init: std.process.Init) !void {
     // Flushing is not garuanteed, this flushes everything to the screen at the end of the program
     defer writer.flush() catch {};
 
-    // This is not necessary, But it dosent hurt! 
+    // This is not necessary, But it dosent hurt!
     try terminal.enableEnhancements(termy.Terminal.Enhancements.REPORT_ALL_KEYS_AS_ESCAPE_CODES | termy.Terminal.Enhancements.REPORT_EVENT_TYPES | termy.Terminal.Enhancements.REPORT_ALTERNATE_KEYS | termy.Terminal.Enhancements.DISAMBIGUATE_ESCAPE_CODES);
     defer terminal.disableEnhancements() catch {};
 
-    // Set the codepage to utf8 
+    // Set the codepage to utf8
     try terminal.enableCp();
     defer terminal.restoreCp() catch {};
 
-    // Enables raw mode 
+    // Enables raw mode
     try terminal.enableRawMode();
     defer terminal.disableRawMode() catch {};
 
-    // Write the greeting to the screen 
+    // Write the greeting to the screen
     try writer.writeAll("Termy Project Generator\n");
     try writer.writeAll("Esc to exit\n");
     try writer.flush();
@@ -97,16 +97,16 @@ pub fn main(init: std.process.Init) !void {
                             const current = &fields[current_field];
 
                             try cursor.moveToColumn(0);
-                            // Clear the row 
+                            // Clear the row
                             try terminal.clear(.CurrentRow);
 
-                            // Print the current field 
+                            // Print the current field
                             try writer.print(
                                 "{s}: ",
                                 .{current.prompt},
                             );
 
-                            // Write the users response 
+                            // Write the users response
                             try writer.writeAll(current.value.items);
 
                             if (current_field + 1 == fields.len) {
@@ -138,7 +138,7 @@ pub fn main(init: std.process.Init) !void {
 
         const current = &fields[current_field];
 
-        // Clear the current row 
+        // Clear the current row
         try cursor.moveToColumn(0);
         try terminal.clear(.CurrentRow);
 
@@ -148,7 +148,7 @@ pub fn main(init: std.process.Init) !void {
         if (current.value.items.len == 0) {
             // If there is nothing write the placeholder
 
-            // Note: Yes dim could be used here, but BrightBlack looks better :P 
+            // Note: Yes dim could be used here, but BrightBlack looks better :P
             try style.setForegroundColor(.BrightBlack);
             try writer.writeAll(current.placeholder);
             try style.setForegroundColor(.Reset);

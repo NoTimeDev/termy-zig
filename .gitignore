@@ -1,6 +1,7 @@
 docs
 test.zig
 /examples/test.zig
+/examples/poop.zig
 /zig-out
 /.zig-cache
 /src/old

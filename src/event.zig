@@ -1,8 +1,8 @@
 //! This file contains data structure representing events
 //!
-//! Note: On unix, some of these events cannot be reported without kitty's enhancement flags 
+//! Note: On unix, some of these events cannot be reported without kitty's enhancement flags
 
-/// An union enum of different types of events 
+/// An union enum of different types of events
 pub const Event = union(enum) {
     Key: KeyEvent,
     Mouse: MouseEvent,
@@ -11,7 +11,7 @@ pub const Event = union(enum) {
     FocusLost,
 };
 
-/// Represents a Mouse Event 
+/// Represents a Mouse Event
 pub const MouseEvent = struct {
     kind: MouseEventKind,
     column: u16,
@@ -19,17 +19,17 @@ pub const MouseEvent = struct {
     modifier: KeyModifiers,
 };
 
-/// This structure holds the possible mouse events 
+/// This structure holds the possible mouse events
 pub const MouseEventKind = union(enum) {
     /// Mouse button pressed down
     Down: MouseButton,
-    
+
     /// Mouse button released
     Up: MouseButton,
-    
+
     /// Mouse moved while pressing a MouseButton
     Drag: MouseButton,
-    
+
     Moved,
 
     ScrollDown,
@@ -46,7 +46,7 @@ pub const MouseButton = enum {
     Unknown,
 };
 
-/// Represents a key event 
+/// Represents a key event
 pub const KeyEvent = struct {
     code: KeyCode,
     modifier: KeyModifiers = .{},
@@ -62,7 +62,7 @@ pub const KeyState = packed struct {
     CapsLock: bool = false,
 };
 
-/// Represents the kind of key click 
+/// Represents the kind of key click
 pub const KeyKind = union(enum) {
     Press,
     Repeat: u16,
@@ -84,13 +84,13 @@ pub const KeyCode = union(enum) {
     Tab,
     Delete,
     Insert,
-    
+
     /// Function keys
     F: u8,
 
     /// A character
     Char: u21,
-    
+
     /// Unkown key
     Null,
 
@@ -119,7 +119,7 @@ pub const KeyCode = union(enum) {
     KeyModifier: KeyModifierCode,
 };
 
-/// Represents a modifer key  
+/// Represents a modifer key
 pub const KeyModifierCode = enum {
     LeftShift,
     LeftControl,

@@ -2,7 +2,7 @@ const std = @import("std");
 const termy = @import("termy");
 
 pub fn main(init: std.process.Init) !void {
-    const stdout = try termy.sysOut();
+    const stdout = std.Io.File.stdout();
     var buffer: [1024]u8 = undefined;
     var tty: termy.Tty = .init(init.io, stdout, &buffer, null);
     var style: termy.Style = .init(&tty);

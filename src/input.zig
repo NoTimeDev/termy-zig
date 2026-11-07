@@ -6,7 +6,7 @@ const parser = @import("parser.zig");
 const Ring = @import("utils.zig").Ring;
 const Tty = @import("root.zig").Tty;
 
-/// This structure allows the user to get events and send queries to the terminal 
+/// This structure allows the user to get events and send queries to the terminal
 ///
 /// Note: Having more than one `Input` instance can cause undefined behaviour
 pub const Input = struct {
