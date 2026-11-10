@@ -444,9 +444,9 @@ pub const Terminal = struct {
             }
         }
     }
-    
-    /// Checks if a terminal supports a feature 
-    pub fn supports(self: *Terminal, feature: Feature) bool{
+
+    /// Checks if a terminal supports a feature
+    pub fn supports(self: *Terminal, feature: Feature) bool {
         return false;
     }
 };

@@ -38,4 +38,5 @@ Changes made in this branch will eventually be merged into main once the goals h
 
 ### Goals
 - [ ] **Documentation Changes** - Rework and improve the documentation.  
-- [ ] **Optional Features** - Add optional functionality through build flags.  
+- [ ] **More Features** - These features include image protocols, Hyperlinks, BracketedPaste, System Clipboard and Notification, and more.
+- [ ] **Examples** - Expand the examples set to give users a better feel and understanding of the library.  
