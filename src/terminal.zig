@@ -10,6 +10,11 @@ pub const Terminal = struct {
     tty: *Tty,
     codepage: ?CodePageInfo = null,
 
+    pub const Feature = enum {
+        SynchronizedUpdate,
+        KittyEnhancements,
+    };
+
     pub const CodePageInfo = if (builtin.os.tag == .windows)
         struct { i: std.os.windows.UINT, o: std.os.windows.UINT }
     else
@@ -438,5 +443,10 @@ pub const Terminal = struct {
                 return error.FailedToGetWindowSize;
             }
         }
+    }
+    
+    /// Checks if a terminal supports a feature 
+    pub fn supports(self: *Terminal, feature: Feature) bool{
+        return false;
     }
 };

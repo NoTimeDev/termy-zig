@@ -1,4 +1,4 @@
-## What is termy?
+# What is termy?
 **termy** is a cross-platform terminal maniuplation library written in Zig, inspired by the Rust library [crossterm](https://github.com/crossterm-rs/crossterm).  
 
 It provides a simple, allocation free API for interacting with terminals on Windows and Unix-like systems.
@@ -27,3 +27,15 @@ pub fn main(init: std.process.Init) !void{
     try writer.flush();
 }
 ```
+
+## Future 
+
+This is the future branch of termy-zig.  
+
+This branch is unstable and subject to change at any time.
+
+Changes made in this branch will eventually be merged into main once the goals have been completed and are considered stable.
+
+### Goals
+- [ ] **Documentation Changes** - Rework and improve the documentation.  
+- [ ] **Optional Features** - Add optional functionality through build flags.  
