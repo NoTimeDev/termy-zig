@@ -5,10 +5,14 @@ pub const options = @import("options");
 const event = @import("../../event.zig");
 const Lazy = @import("../../utils.zig").Lazy;
 
-pub const WinSupportedFeatures = packed struct(u8) { VtOut: bool = false, _: u7 = 0 };
+pub const WinSupportedFeatures = packed struct(u8) {
+    VtOut: bool = false,
+    _: u7 = 0,
+};
 
 var conIn: Lazy(std.Io.File, struct {
     pub fn init() std.Io.File {
+        winapi.cpp();
         const handle = winapi.CreateFileW(std.unicode.utf8ToUtf16LeStringLiteral("CONIN$"), winapi.GENERIC_READ | winapi.GENERIC_WRITE, winapi.FILE_SHARE_READ, null, winapi.OPEN_EXISTING, 0, null);
         return .{ .handle = handle, .flags = .{ .nonblocking = false } };
     }

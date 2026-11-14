@@ -5,30 +5,14 @@ pub const Backend = enum {
     native,
 };
 
-/// Note this is not supported on windows native Backend
-pub const GraphicsBackend = enum {
-    /// Kitty graphics protocol
-    kitty,
-    /// SIXLE graphics protocol
-    sixle,
-    /// Iterm graphics protocol
-    iterm,
-    /// Let termy dicide at runtime
-    auto,
-    /// Image support
-    none,
-};
-
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     const out = b.option(Backend, "out", "Output Backend: fallback, vt, native (default: fallback)") orelse .fallback;
-    const graphics_backend = b.option(GraphicsBackend, "graphics", "Graphics Backend: kitty, sixle, iterm, auto, none(default: none, graphics support disabled)") orelse .none;
 
     const options = b.addOptions();
     options.addOption(Backend, "out", out);
-    options.addOption(GraphicsBackend, "graphics", graphics_backend);
 
     const mod = b.addModule("termy", .{
         .root_source_file = b.path("src/root.zig"),
@@ -60,7 +44,10 @@ pub fn build(b: *std.Build) void {
 
     const example_step = b.step("example", "Build and run all example programs");
     const example_build_step = b.step("build_example", "Build all example programs");
-    for ([_][]const u8{ "examples/color.zig", "examples/project_generator.zig", "examples/progress_bar.zig" }) |path| {
+    for ([_][]const u8{
+        "examples/color.zig",
+        "examples/project_generator.zig",
+    }) |path| {
         const name = std.fs.path.stem(path);
 
         if (selected_example) |selected| {
@@ -71,6 +58,8 @@ pub fn build(b: *std.Build) void {
         const run = b.addRunArtifact(exe);
         const runi = b.addInstallArtifact(exe, .{});
         example_step.dependOn(&run.step);
+        run.stdio = .inherit;
+        run.setStdIn(run.stdin);
         example_build_step.dependOn(&runi.step);
     }
     const test_step = b.step("test", "Build and run test example");

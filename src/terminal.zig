@@ -10,11 +10,6 @@ pub const Terminal = struct {
     tty: *Tty,
     codepage: ?CodePageInfo = null,
 
-    pub const Feature = enum {
-        SynchronizedUpdate,
-        KittyEnhancements,
-    };
-
     pub const CodePageInfo = if (builtin.os.tag == .windows)
         struct { i: std.os.windows.UINT, o: std.os.windows.UINT }
     else
@@ -274,9 +269,9 @@ pub const Terminal = struct {
 
                 if (win.winapi.SetConsoleActiveScreenBuffer(handle) == .FALSE) return error.FailedToEnterAlternateScreen;
                 const file: std.Io.File = .{ .handle = handle, .flags = .{ .nonblocking = false } };
-                self.tty.output_state.* = .init(file);
+                self.tty.output_state = .init(file);
                 self.tty.output_state.original_handle = self.tty.out_writer.file.handle;
-                self.tty.out_writer.* = .init(file, self.tty.out_writer.io, self.tty.out_writer.interface.buffer);
+                self.tty.out_writer = .init(file, self.tty.out_writer.io, self.tty.out_writer.interface.buffer);
                 return;
             }
         }
@@ -295,8 +290,8 @@ pub const Terminal = struct {
 
                 win.windows.CloseHandle(self.tty.out_writer.file.handle);
                 const file: std.Io.File = .{ .handle = self.tty.output_state.original_handle, .flags = .{ .nonblocking = false } };
-                self.tty.output_state.* = .init(file);
-                self.tty.out_writer.* = .init(file, self.tty.out_writer.io, self.tty.out_writer.interface.buffer);
+                self.tty.output_state = .init(file);
+                self.tty.out_writer = .init(file, self.tty.out_writer.io, self.tty.out_writer.interface.buffer);
                 self.tty.output_state.original_handle = win.windows.INVALID_HANDLE_VALUE;
                 return;
             }
@@ -443,10 +438,5 @@ pub const Terminal = struct {
                 return error.FailedToGetWindowSize;
             }
         }
-    }
-
-    /// Checks if a terminal supports a feature
-    pub fn supports(self: *Terminal, feature: Feature) bool {
-        return false;
     }
 };
