@@ -1,8 +1,18 @@
+// ! This file contains externs for windows specific functions
+
 const windows = @import("std").os.windows;
 
-pub const CONSOLE_CURSOR_INFO = extern struct { dwSize: windows.DWORD, bVisible: windows.BOOL };
+pub const CONSOLE_CURSOR_INFO = extern struct {
+    dwSize: windows.DWORD,
+    bVisible: windows.BOOL,
+};
 
-pub const SMALL_RECT = extern struct { Left: windows.WORD, Top: windows.WORD, Right: windows.WORD, Bottom: windows.WORD };
+pub const SMALL_RECT = extern struct {
+    Left: windows.WORD,
+    Top: windows.WORD,
+    Right: windows.WORD,
+    Bottom: windows.WORD,
+};
 
 pub const CONSOLE_SCREEN_BUFFER_INFO = extern struct {
     dwSize: windows.COORD,
@@ -12,17 +22,38 @@ pub const CONSOLE_SCREEN_BUFFER_INFO = extern struct {
     dwMaximumWindowSize: windows.COORD,
 };
 
-pub const CHAR = extern union { UnicodeChar: windows.WCHAR, AsciiChar: windows.CHAR };
+pub const CHAR = extern union {
+    UnicodeChar: windows.WCHAR,
+    AsciiChar: windows.CHAR,
+};
 
-pub const KEY_EVENT_RECORD = extern struct { bKeyDown: windows.BOOL, wRepeatCount: windows.WORD, wVirtualKeyCode: windows.WORD, wVirtualScanCode: windows.WORD, uChar: CHAR, dwControlKeyState: windows.DWORD };
+pub const KEY_EVENT_RECORD = extern struct {
+    bKeyDown: windows.BOOL,
+    wRepeatCount: windows.WORD,
+    wVirtualKeyCode: windows.WORD,
+    wVirtualScanCode: windows.WORD,
+    uChar: CHAR,
+    dwControlKeyState: windows.DWORD,
+};
 
-pub const MOUSE_EVENT_RECORD = extern struct { dwMousePosition: windows.COORD, dwButtonState: windows.DWORD, dwControlKeyState: windows.DWORD, dwEventFlags: windows.DWORD };
+pub const MOUSE_EVENT_RECORD = extern struct {
+    dwMousePosition: windows.COORD,
+    dwButtonState: windows.DWORD,
+    dwControlKeyState: windows.DWORD,
+    dwEventFlags: windows.DWORD,
+};
 
-pub const WINDOW_BUFFER_SIZE_RECORD = extern struct { dwSize: windows.COORD };
+pub const WINDOW_BUFFER_SIZE_RECORD = extern struct {
+    dwSize: windows.COORD,
+};
 
-pub const MENU_EVENT_RECORD = extern struct { dwCommandId: windows.UINT };
+pub const MENU_EVENT_RECORD = extern struct {
+    dwCommandId: windows.UINT,
+};
 
-pub const FOCUS_EVENT_RECORD = extern struct { bSetFocus: windows.BOOL };
+pub const FOCUS_EVENT_RECORD = extern struct {
+    bSetFocus: windows.BOOL,
+};
 
 pub const INPUT_RECORD = extern struct {
     const EVENT = extern union {

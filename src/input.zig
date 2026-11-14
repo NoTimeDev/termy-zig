@@ -5,28 +5,29 @@ const event = @import("event.zig");
 const parser = @import("parser.zig");
 const Ring = @import("utils.zig").Ring;
 const Tty = @import("root.zig").Tty;
+const option = @import("options");
 
-/// This structure allows the user to get events and send queries to the terminal
+/// This structure allows the user to get events and send queries to the terminal.
 ///
-/// Note: Having more than one `Input` instance can cause undefined behaviour
+/// Note: Having more than one `Input` instance can cause undefined behaviour.
 pub const Input = struct {
     tty: *Tty,
     buffer: [64]u8 = undefined,
     start: usize = 0,
     len: usize = 0,
 
-    /// Creates a new `Input` structure
+    /// Creates a new `Input` structure.
     pub fn init(tty: *Tty) Input {
         if (builtin.os.tag != .windows) {
             const unix = @import("sys/unix.zig");
-            if (!unix.inited) unix.init_resizecatch();
+            if (!unix.inited) unix.initResizeCatch();
         }
         return .{ .tty = tty };
     }
 
-    /// Polls for an event in a given time
+    /// Polls for an event in a given time.
     ///
-    /// true - event is available, false - event is not available
+    /// true - event is available, false - event is not available.
     pub fn poll(self: *Input, timeout: std.Io.Duration) !bool {
         if (builtin.os.tag == .windows) {
             const win = @import("sys/windows/root.zig");
@@ -89,7 +90,7 @@ pub const Input = struct {
         }
     }
 
-    /// Returns and event, this function will block until an event is available
+    /// Returns and event, this function will block until an event is available.
     pub fn read(self: *Input) !event.Event {
         if (builtin.os.tag == .windows) {
             const win = @import("sys/windows/root.zig");
@@ -129,7 +130,7 @@ pub const Input = struct {
     }
 
     /// Querys the terminal position if `eventlist` is null any unrelated events are discarded.
-    /// Function returns null if it times out
+    /// Function returns null if it times out.
     ///
     /// For windows systems the `eventlist` can always be null as events will never be written to the list.
     pub fn queryCursorPosition(self: *Input, timeout: std.Io.Duration, eventlist: ?struct { allocator: std.mem.Allocator, list: *std.ArrayList(event.Event) }) !?struct { x: u16, y: u16 } {
