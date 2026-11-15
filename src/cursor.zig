@@ -157,7 +157,7 @@ pub const Cursor = struct {
                 return;
             }
         }
-        self.tty.out_writer.interface.print("\x1b[{};{}H", .{ x, y }) catch return error.FailedToMoveCursor;
+        self.tty.out_writer.interface.print("\x1b[{};{}H", .{ y, x }) catch return error.FailedToMoveCursor;
     }
 
     /// Hides the cursor

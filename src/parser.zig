@@ -254,7 +254,7 @@ pub const Parser = struct {
             else
                 self.parseRXVTMouse(),
             'R' => {
-                return .{ .response = .{ .CursorPosition = .{ .x = self.params[0].value, .y = self.params[1].value } } };
+                return .{ .response = .{ .CursorPosition = .{ .x = self.params[1].value, .y = self.params[0].value } } };
             },
             else => {
                 return .invalid;
