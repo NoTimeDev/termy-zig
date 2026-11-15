@@ -220,8 +220,9 @@ pub const Input = struct {
             const win = @import("sys/windows/root.zig");
             var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
             if (win.winapi.GetConsoleScreenBufferInfo(self.tty.out_writer.file.handle, &info) == .FALSE) return error.FailedToQueryPosition;
-            const visible_row: i16 = info.dwCursorPosition.Y -| info.srWindow.Top;
-            return .{ .x = @intCast(info.dwCursorPosition.X +| @as(i16, 1)), .y = @intCast(@as(u16, @intCast(@max(visible_row, 0))) +| 1) };
+            const x: i32 = @as(i32, info.dwCursorPosition.X) + 1;
+            const y: i32 = @as(i32, info.dwCursorPosition.Y) - @as(i32, info.srWindow.Top) + 1;
+            return .{ .x = @intCast(@max(x, 0)), .y = @intCast(@max(y, 0)) };
         } else {
             var left = timeout.toMilliseconds();
             self.tty.out_writer.interface.writeAll("\x1b[6n") catch return error.FailedToQueryPosition;
