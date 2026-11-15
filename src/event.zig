@@ -6,7 +6,7 @@
 pub const Event = union(enum) {
     Key: KeyEvent,
     Mouse: MouseEvent,
-    Resize: struct { u16, u16 },
+    Resize: struct { columns: u16, rows: u16 },
     FocusGained,
     FocusLost,
 

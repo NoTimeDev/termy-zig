@@ -119,7 +119,7 @@ pub const Input = struct {
             const unix = @import("sys/unix.zig");
             if (unix.resizes.len != 0) {
                 const ws = unix.resizes.pop().?;
-                return .{ .event = .{ .Resize = .{ ws.rows, ws.columns } } };
+                return .{ .event = .{ .Resize = .{ .columns = ws.columns, .rows = ws.rows } } };
             }
 
             var p: parser.Parser = .{};
@@ -190,7 +190,7 @@ pub const Input = struct {
                     return e;
                 },
                 win.winapi.WINDOW_BUFFER_SIZE_EVENT => {
-                    return .{ .Resize = .{ @intCast(record.Event.WindowBufferSizeEvent.dwSize.X +| 1), @intCast(record.Event.WindowBufferSizeEvent.dwSize.Y +| 1) } };
+                    return .{ .Resize = .{ .columns = @intCast(record.Event.WindowBufferSizeEvent.dwSize.X +| 1), .rows = @intCast(record.Event.WindowBufferSizeEvent.dwSize.Y +| 1) } };
                 },
                 win.winapi.MENU_EVENT => return .{ .Key = .{ .code = .Null } },
                 else => return error.InvalidEventFound,
@@ -215,7 +215,7 @@ pub const Input = struct {
             const win = @import("sys/windows/root.zig");
             var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
             if (win.winapi.GetConsoleScreenBufferInfo(self.tty.out_writer.file.handle, &info) == .FALSE) return error.FailedToQueryPosition;
-            return .{ .x = @intCast(info.dwCursorPosition.X +| 1), .y = @intCast(info.dwCursorPosition.Y +| 1) };
+            return .{ .x = @intCast(info.dwCursorPosition.X +| 1), .y = @intCast(info.dwCursorPosition.Y -| info.srWindow.Top +| 1) };
         } else {
             var left = timeout.toMilliseconds();
             self.tty.out_writer.interface.writeAll("\x1b[6n") catch return error.FailedToQueryPosition;
