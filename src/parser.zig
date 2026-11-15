@@ -532,3 +532,18 @@ test "kitty ctrl+shift+x reports both modifiers" {
         else => return error.TestUnexpectedResult,
     }
 }
+
+test "cursor position reports x as column and y as row" {
+    var parser: Parser = .{};
+    var got: InternalEvent = .incomplete;
+    for ("\x1b[7;22R") |b| got = parser.step(b);
+    switch (got) {
+        .response => |response| switch (response) {
+            .CursorPosition => |position| {
+                try std.testing.expectEqual(@as(u16, 22), position.x);
+                try std.testing.expectEqual(@as(u16, 7), position.y);
+            },
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
