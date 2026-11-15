@@ -221,7 +221,7 @@ pub const Input = struct {
             var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
             if (win.winapi.GetConsoleScreenBufferInfo(self.tty.out_writer.file.handle, &info) == .FALSE) return error.FailedToQueryPosition;
             const visible_row: i16 = info.dwCursorPosition.Y -| info.srWindow.Top;
-            return .{ .x = @intCast(info.dwCursorPosition.X +| 1), .y = @intCast(@as(u16, @intCast(@max(visible_row, 0))) +| 1) };
+            return .{ .x = @intCast(info.dwCursorPosition.X +| @as(i16, 1)), .y = @intCast(@as(u16, @intCast(@max(visible_row, 0))) +| 1) };
         } else {
             var left = timeout.toMilliseconds();
             self.tty.out_writer.interface.writeAll("\x1b[6n") catch return error.FailedToQueryPosition;
