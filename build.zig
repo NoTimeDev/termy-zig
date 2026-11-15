@@ -62,22 +62,8 @@ pub fn build(b: *std.Build) void {
         run.setStdIn(run.stdin);
         example_build_step.dependOn(&runi.step);
     }
-    const test_step = b.step("test", "Build and run test example");
-    const test_build_step = b.step("build_test", "Build and test example");
-    const exe = b.addExecutable(.{
-        .name = "test",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("examples/test.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "termy", .module = mod },
-            },
-        }),
-    });
-
-    const run = b.addRunArtifact(exe);
-    const runi = b.addInstallArtifact(exe, .{});
-    test_step.dependOn(&run.step);
-    test_build_step.dependOn(&runi.step);
+    const unit_tests = b.addTest(.{ .root_module = mod });
+    const run_unit_tests = b.addRunArtifact(unit_tests);
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&run_unit_tests.step);
 }

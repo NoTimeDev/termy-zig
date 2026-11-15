@@ -323,6 +323,25 @@ pub const Terminal = struct {
         self.tty.out_writer.interface.writeAll("\x1b[?2026l") catch return error.FailedToEndSynchronizedUpdate;
     }
 
+    /// Enables bracketed paste reporting, so pasted text arrives as `Paste`
+    /// events instead of individual key presses.
+    ///
+    /// Note: this is a no-op on Windows consoles without VT input support.
+    pub fn enableBracketedPaste(self: *Terminal) !void {
+        if (builtin.os.tag == .windows and options.out != .vt) {
+            if (options.out == .native or !self.tty.output_state.supported.VtOut) return;
+        }
+        self.tty.out_writer.interface.writeAll("\x1b[?2004h") catch return error.FailedToEnableBracketedPaste;
+    }
+
+    /// Disables bracketed paste reporting
+    pub fn disableBracketedPaste(self: *Terminal) !void {
+        if (builtin.os.tag == .windows and options.out != .vt) {
+            if (options.out == .native or !self.tty.output_state.supported.VtOut) return;
+        }
+        self.tty.out_writer.interface.writeAll("\x1b[?2004l") catch return error.FailedToDisableBracketedPaste;
+    }
+
     /// Enables line wrap
     pub fn enableLineWrap(self: *Terminal) !void {
         if (builtin.os.tag == .windows and options.out != .vt) {
@@ -430,9 +449,8 @@ pub const Terminal = struct {
                 .columns = @intCast(info.dwSize.X),
             };
         } else {
-            const unix = @import("sys/unix.zig");
             var ws: std.posix.winsize = undefined;
-            if (std.posix.errno(std.posix.system.ioctl((unix.tty_val.get(.{}) catch return error.FailedToGetWindowSize).handle, std.posix.T.IOCGWINSZ, @intFromPtr(&ws))) == .SUCCESS) {
+            if (std.posix.errno(std.posix.system.ioctl(self.tty.out_writer.file.handle, std.posix.T.IOCGWINSZ, @intFromPtr(&ws))) == .SUCCESS) {
                 return .{ .rows = ws.row, .columns = ws.col };
             } else {
                 return error.FailedToGetWindowSize;

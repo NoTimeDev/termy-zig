@@ -220,7 +220,7 @@ pub const Cursor = struct {
                 return;
             }
         }
-        self.tty.out_writer.interface.writeAll("\x1b[s") catch return error.FailedToRestorePostion;
+        self.tty.out_writer.interface.writeAll("\x1b[u") catch return error.FailedToRestorePostion;
     }
 
     /// Sets the cursor style.

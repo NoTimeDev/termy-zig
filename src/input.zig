@@ -16,6 +16,11 @@ pub const Input = struct {
     start: usize = 0,
     len: usize = 0,
 
+    paste_buffer: [16 * 1024]u8 = undefined,
+    paste_len: usize = 0,
+    paste_match: usize = 0,
+    paste_active: bool = false,
+
     /// Creates a new `Input` structure.
     pub fn init(tty: *Tty) Input {
         if (builtin.os.tag != .windows) {
@@ -41,6 +46,74 @@ pub const Input = struct {
         }
     }
 
+    fn refill(self: *Input) !void {
+        const n = self.tty.in_file.readStreaming(self.tty.io, &.{&self.buffer}) catch return error.FailedToReadEvent;
+        if (n == 0) return error.EndOfInput;
+        self.len = n;
+        self.start = 0;
+    }
+
+    fn nextByte(self: *Input) !u8 {
+        if (self.start >= self.len) try self.refill();
+        const b = self.buffer[self.start];
+        self.start += 1;
+        return b;
+    }
+
+    fn takePaste(self: *Input) []const u8 {
+        const pasted = self.paste_buffer[0..self.paste_len];
+        self.paste_len = 0;
+        return pasted;
+    }
+
+    /// Consumes bytes while a bracketed paste is active.
+    ///
+    /// Returns a chunk event when the clipboard is larger than the paste
+    /// buffer, `null` when the terminator was found and no content is pending,
+    /// and an end-of-input error when the terminal disappears mid paste.
+    fn consumePaste(self: *Input) !?parser.InternalEvent {
+        const terminator = "\x1b[201~";
+
+        while (true) {
+            if (self.paste_len + terminator.len >= self.paste_buffer.len) {
+                return .{ .event = .{ .Paste = self.takePaste() } };
+            }
+
+            const b = try self.nextByte();
+            if (self.paste_match > 0) {
+                if (b == terminator[self.paste_match]) {
+                    self.paste_match += 1;
+                    if (self.paste_match == terminator.len) {
+                        self.paste_active = false;
+                        self.paste_match = 0;
+                        if (self.paste_len == 0) return null;
+                        return .{ .event = .{ .Paste = self.takePaste() } };
+                    }
+                    continue;
+                }
+
+                const prefix = terminator[0..self.paste_match];
+                @memcpy(self.paste_buffer[self.paste_len..][0..prefix.len], prefix);
+                self.paste_len += prefix.len;
+                self.paste_match = 0;
+                if (b == '\x1b') {
+                    self.paste_match = 1;
+                    continue;
+                }
+                self.paste_buffer[self.paste_len] = b;
+                self.paste_len += 1;
+                continue;
+            }
+
+            if (b == '\x1b') {
+                self.paste_match = 1;
+                continue;
+            }
+            self.paste_buffer[self.paste_len] = b;
+            self.paste_len += 1;
+        }
+    }
+
     fn readInternal(self: *Input) !parser.InternalEvent {
         if (builtin.os.tag != .windows) {
             const unix = @import("sys/unix.zig");
@@ -49,21 +122,16 @@ pub const Input = struct {
                 return .{ .event = .{ .Resize = .{ ws.rows, ws.columns } } };
             }
 
-            _ = self.poll(.fromMilliseconds(-1)) catch return error.FailedToReadEvent;
-
-            if (self.len == 0) {
-                self.len = self.tty.in_file.readStreaming(self.tty.io, &.{&self.buffer}) catch return error.FailedToReadEvent;
-                self.start = 0;
-            }
-
             var p: parser.Parser = .{};
 
             while (true) {
-                if (self.start >= self.len) {
-                    _ = self.poll(.fromMilliseconds(-1)) catch return error.FailedToReadEvent;
-                    self.len = self.tty.in_file.readStreaming(self.tty.io, &.{&self.buffer}) catch return error.FailedToReadEvent;
-                    self.start = 0;
+                if (self.paste_active) {
+                    if (try self.consumePaste()) |pasted| return pasted;
+                    p = .{};
+                    continue;
                 }
+
+                if (self.start >= self.len) try self.refill();
 
                 const b = self.buffer[self.start];
                 const remaining = self.len - self.start;
@@ -83,6 +151,13 @@ pub const Input = struct {
                             }
                         }
                     },
+                    .paste_begin => {
+                        self.paste_active = true;
+                        self.paste_match = 0;
+                        self.paste_len = 0;
+                        p = .{};
+                    },
+                    .paste_end => p = .{},
                     else => return ievent,
                 }
             }
@@ -124,7 +199,9 @@ pub const Input = struct {
             switch (try self.readInternal()) {
                 .invalid => return error.InvalidEventFound,
                 .response => return .{ .Key = .{ .code = .Null } },
-                else => |e| return e.event,
+                .paste_begin, .paste_end => return error.InvalidEventFound,
+                .event => |e| return e,
+                .incomplete => unreachable,
             }
         }
     }
@@ -158,7 +235,8 @@ pub const Input = struct {
                                 .CursorPosition => |c| return .{ .x = c.x, .y = c.y },
                             }
                         },
-                        else => unreachable,
+                        .paste_begin, .paste_end => return error.InvalidEventFound,
+                        .incomplete => unreachable,
                     }
                 }
                 const end = std.Io.Clock.now(.awake, self.tty.io).toMilliseconds();
