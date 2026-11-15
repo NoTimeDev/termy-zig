@@ -171,7 +171,12 @@ pub const Input = struct {
             const win = @import("sys/windows/root.zig");
             var record: win.winapi.INPUT_RECORD = undefined;
             var n: win.windows.DWORD = 0;
-            if (win.winapi.ReadConsoleInputW(self.tty.in_file.handle, &record, 1, &n) == .FALSE) return error.FailedToReadEvent;
+            if (win.winapi.ReadConsoleInputW(self.tty.in_file.handle, &record, 1, &n) == .FALSE) {
+                switch (win.windows.GetLastError()) {
+                    .BROKEN_PIPE, .HANDLE_EOF => return error.EndOfInput,
+                    else => return error.FailedToReadEvent,
+                }
+            }
 
             switch (record.EventType) {
                 win.winapi.KEY_EVENT => {
@@ -215,7 +220,8 @@ pub const Input = struct {
             const win = @import("sys/windows/root.zig");
             var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
             if (win.winapi.GetConsoleScreenBufferInfo(self.tty.out_writer.file.handle, &info) == .FALSE) return error.FailedToQueryPosition;
-            return .{ .x = @intCast(info.dwCursorPosition.X +| 1), .y = @intCast(info.dwCursorPosition.Y -| info.srWindow.Top +| 1) };
+            const visible_row: i16 = info.dwCursorPosition.Y -| info.srWindow.Top;
+            return .{ .x = @intCast(info.dwCursorPosition.X +| 1), .y = @intCast(@as(u16, @intCast(@max(visible_row, 0))) +| 1) };
         } else {
             var left = timeout.toMilliseconds();
             self.tty.out_writer.interface.writeAll("\x1b[6n") catch return error.FailedToQueryPosition;
