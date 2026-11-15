@@ -8,6 +8,8 @@ pub const Response = union(enum) {
 pub const InternalEvent = union(enum) {
     event: event.Event,
     response: Response,
+    paste_begin,
+    paste_end,
     incomplete,
     invalid,
 };
@@ -197,6 +199,8 @@ pub const Parser = struct {
             '~' => {
                 if (self.param_count == 0) return .invalid;
                 const v = self.params[0].value;
+                if (v == 200) return .paste_begin;
+                if (v == 201) return .paste_end;
                 const code: event.KeyCode = switch (v) {
                     1, 7 => .Home,
                     2 => .Insert,
@@ -250,7 +254,7 @@ pub const Parser = struct {
             else
                 self.parseRXVTMouse(),
             'R' => {
-                return .{ .response = .{ .CursorPosition = .{ .x = self.params[0].value, .y = self.params[1].value } } };
+                return .{ .response = .{ .CursorPosition = .{ .x = self.params[1].value, .y = self.params[0].value } } };
             },
             else => {
                 return .invalid;
@@ -472,3 +476,74 @@ pub const Parser = struct {
         };
     }
 };
+
+test "bracketed paste markers produce internal events" {
+    var begin_parser: Parser = .{};
+    var got: InternalEvent = .incomplete;
+    for ("\x1b[200~") |b| got = begin_parser.step(b);
+    switch (got) {
+        .paste_begin => {},
+        else => return error.TestUnexpectedResult,
+    }
+
+    var end_parser: Parser = .{};
+    for ("\x1b[201~") |b| got = end_parser.step(b);
+    switch (got) {
+        .paste_end => {},
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "kitty ctrl+enter is distinct from enter" {
+    var parser: Parser = .{};
+    var got: InternalEvent = .incomplete;
+    for ("\x1b[13;5u") |b| got = parser.step(b);
+    switch (got) {
+        .event => |e| switch (e) {
+            .Key => |key| {
+                switch (key.code) {
+                    .Enter => {},
+                    else => return error.TestUnexpectedResult,
+                }
+                try std.testing.expect(key.modifier.Control);
+            },
+            else => return error.TestUnexpectedResult,
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "kitty ctrl+shift+x reports both modifiers" {
+    var parser: Parser = .{};
+    var got: InternalEvent = .incomplete;
+    for ("\x1b[120;6u") |b| got = parser.step(b);
+    switch (got) {
+        .event => |e| switch (e) {
+            .Key => |key| {
+                switch (key.code) {
+                    .Char => |ch| try std.testing.expectEqual(@as(u21, 'x'), ch),
+                    else => return error.TestUnexpectedResult,
+                }
+                try std.testing.expect(key.modifier.Control);
+                try std.testing.expect(key.modifier.Shift);
+            },
+            else => return error.TestUnexpectedResult,
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "cursor position reports x as column and y as row" {
+    var parser: Parser = .{};
+    var got: InternalEvent = .incomplete;
+    for ("\x1b[7;22R") |b| got = parser.step(b);
+    switch (got) {
+        .response => |response| switch (response) {
+            .CursorPosition => |position| {
+                try std.testing.expectEqual(@as(u16, 22), position.x);
+                try std.testing.expectEqual(@as(u16, 7), position.y);
+            },
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}

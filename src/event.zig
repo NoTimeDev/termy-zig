@@ -6,9 +6,18 @@
 pub const Event = union(enum) {
     Key: KeyEvent,
     Mouse: MouseEvent,
-    Resize: struct { u16, u16 },
+    Resize: struct { columns: u16, rows: u16 },
     FocusGained,
     FocusLost,
+
+    /// Text pasted between bracketed paste markers. On unix this is only
+    /// produced when bracketed paste is enabled on the terminal.
+    ///
+    /// The slice points into the `Input` that produced the event and is only
+    /// valid until the next call to `Input.read`, `Input.poll` or
+    /// `Input.queryCursorPosition` on that instance. Long pastes are split
+    /// into several events.
+    Paste: []const u8,
 };
 
 /// Represents a Mouse Event.
