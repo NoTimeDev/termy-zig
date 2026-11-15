@@ -195,7 +195,13 @@ pub const Input = struct {
                     return e;
                 },
                 win.winapi.WINDOW_BUFFER_SIZE_EVENT => {
-                    return .{ .Resize = .{ .columns = @intCast(record.Event.WindowBufferSizeEvent.dwSize.X +| 1), .rows = @intCast(record.Event.WindowBufferSizeEvent.dwSize.Y +| 1) } };
+                    var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
+                    if (win.winapi.GetConsoleScreenBufferInfo(self.tty.out_writer.file.handle, &info) == .FALSE) {
+                        return .{ .Resize = .{ .columns = @intCast(record.Event.WindowBufferSizeEvent.dwSize.X +| 1), .rows = @intCast(record.Event.WindowBufferSizeEvent.dwSize.Y +| 1) } };
+                    }
+                    const rows: i32 = @as(i32, info.srWindow.Bottom) - @as(i32, info.srWindow.Top) + 1;
+                    const columns: i32 = @as(i32, info.srWindow.Right) - @as(i32, info.srWindow.Left) + 1;
+                    return .{ .Resize = .{ .columns = @intCast(@max(columns, 0)), .rows = @intCast(@max(rows, 0)) } };
                 },
                 win.winapi.MENU_EVENT => return .{ .Key = .{ .code = .Null } },
                 else => return error.InvalidEventFound,
