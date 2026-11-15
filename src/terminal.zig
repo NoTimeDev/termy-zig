@@ -444,9 +444,11 @@ pub const Terminal = struct {
             var info: win.winapi.CONSOLE_SCREEN_BUFFER_INFO = undefined;
             if (win.winapi.GetConsoleScreenBufferInfo(self.tty.out_writer.file.handle, &info) == .FALSE) return error.FailedToGetWindowSize;
 
+            const rows: i32 = @as(i32, info.srWindow.Bottom) - @as(i32, info.srWindow.Top) + 1;
+            const columns: i32 = @as(i32, info.srWindow.Right) - @as(i32, info.srWindow.Left) + 1;
             return .{
-                .rows = @intCast(info.dwSize.Y),
-                .columns = @intCast(info.dwSize.X),
+                .rows = @intCast(@max(rows, 0)),
+                .columns = @intCast(@max(columns, 0)),
             };
         } else {
             var ws: std.posix.winsize = undefined;
