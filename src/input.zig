@@ -16,10 +16,11 @@ pub const Input = struct {
     start: usize = 0,
     len: usize = 0,
 
-    paste_buffer: [16 * 1024]u8 = undefined,
+    paste_buffer: [512]u8 = undefined,
     paste_len: usize = 0,
     paste_match: usize = 0,
     paste_active: bool = false,
+    retend: bool = false,
 
     /// Creates a new `Input` structure.
     pub fn init(tty: *Tty) Input {
@@ -43,7 +44,7 @@ pub const Input = struct {
             };
         } else {
             const unix = @import("sys/unix.zig");
-            if (unix.resizes.len != 0) return true;
+            if (unix.resizes.len != 0 or self.paste_active == true or self.retend == true) return true;
             return unix.pollfd(self.tty.in_file.handle, @intCast(timeout.toMilliseconds()));
         }
     }
@@ -70,10 +71,8 @@ pub const Input = struct {
 
     /// Consumes bytes while a bracketed paste is active.
     ///
-    /// Returns a chunk event when the clipboard is larger than the paste
-    /// buffer, `null` when the terminator was found and no content is pending,
-    /// and an end-of-input error when the terminal disappears mid paste.
-    fn consumePaste(self: *Input) !?parser.InternalEvent {
+    /// Returns a chunk event when the clipboard is larger than the paste, end-of-input error when the terminal disappears mid paste.
+    fn consumePaste(self: *Input) !parser.InternalEvent {
         const terminator = "\x1b[201~";
 
         while (true) {
@@ -88,7 +87,7 @@ pub const Input = struct {
                     if (self.paste_match == terminator.len) {
                         self.paste_active = false;
                         self.paste_match = 0;
-                        if (self.paste_len == 0) return null;
+                        if (self.paste_len == 0) return .{ .event = .{ .Paste = null } };
                         return .{ .event = .{ .Paste = self.takePaste() } };
                     }
                     continue;
@@ -118,6 +117,10 @@ pub const Input = struct {
 
     fn readInternal(self: *Input) !parser.InternalEvent {
         if (builtin.os.tag != .windows) {
+            if (self.retend) {
+                self.retend = false;
+                return .{ .event = .{ .Paste = null } };
+            }
             const unix = @import("sys/unix.zig");
 
             if (unix.resizes.len != 0) {
@@ -129,9 +132,11 @@ pub const Input = struct {
 
             while (true) {
                 if (self.paste_active) {
-                    if (try self.consumePaste()) |pasted| return pasted;
-                    p = .{};
-                    continue;
+                    const paste = try self.consumePaste();
+                    if (!self.paste_active and paste.event.Paste != null) {
+                        self.retend = true;
+                    }
+                    return paste;
                 }
 
                 if (self.start >= self.len) try self.refill();
@@ -160,7 +165,7 @@ pub const Input = struct {
                         self.paste_len = 0;
                         p = .{};
                     },
-                    .paste_end => p = .{},
+                    .paste_end => return error.InvalidEventFound, // This means there was no begining
                     else => return ievent,
                 }
             }
@@ -213,9 +218,8 @@ pub const Input = struct {
             switch (try self.readInternal()) {
                 .invalid => return error.InvalidEventFound,
                 .response => return .{ .Key = .{ .code = .Null } },
-                .paste_begin, .paste_end => return error.InvalidEventFound,
                 .event => |e| return e,
-                .incomplete => unreachable,
+                else => unreachable,
             }
         }
     }
