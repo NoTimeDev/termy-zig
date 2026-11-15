@@ -42,7 +42,9 @@ pub const Input = struct {
                 else => false,
             };
         } else {
-            return @import("sys/unix.zig").pollfd(self.tty.in_file.handle, @intCast(timeout.toMilliseconds()));
+            const unix = @import("sys/unix.zig");
+            if (unix.resizes.len != 0) return true;
+            return unix.pollfd(self.tty.in_file.handle, @intCast(timeout.toMilliseconds()));
         }
     }
 
@@ -117,6 +119,7 @@ pub const Input = struct {
     fn readInternal(self: *Input) !parser.InternalEvent {
         if (builtin.os.tag != .windows) {
             const unix = @import("sys/unix.zig");
+
             if (unix.resizes.len != 0) {
                 const ws = unix.resizes.pop().?;
                 return .{ .event = .{ .Resize = .{ .columns = ws.columns, .rows = ws.rows } } };

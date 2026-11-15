@@ -12,7 +12,6 @@ pub const WinSupportedFeatures = packed struct(u8) {
 
 var conIn: Lazy(std.Io.File, struct {
     pub fn init() std.Io.File {
-        winapi.cpp();
         const handle = winapi.CreateFileW(std.unicode.utf8ToUtf16LeStringLiteral("CONIN$"), winapi.GENERIC_READ | winapi.GENERIC_WRITE, winapi.FILE_SHARE_READ, null, winapi.OPEN_EXISTING, 0, null);
         return .{ .handle = handle, .flags = .{ .nonblocking = false } };
     }
